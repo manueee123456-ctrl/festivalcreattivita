@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+a<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -1772,7 +1772,23 @@ body.dark .valigia-item{background:#1e1640;border-color:#3d2a6e;color:#c4b5fd;}
             </div>
             <button id="pauseBtn" onclick="togglePause()" style="background:#f3f4f6;border:none;padding:8px 18px;border-radius:50px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;color:#6b7280;">⏸ Attiva pausa</button>
           </div>
-    s
+          <div style="background:white;border:1px solid #f3f4f6;border-radius:12px;padding:14px;margin-bottom:10px;">
+            <div style="font-weight:800;font-size:.9rem;color:var(--text);margin-bottom:8px;">📅 Chiudi registrazioni dal</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <input type="datetime-local" id="regCloseDate" class="admin-input" style="flex:1;">
+              <button class="btn-save" onclick="saveRegCloseDate()">Salva</button>
+            </div>
+            <div style="font-size:.72rem;color:#9ca3af;margin-top:6px;">Dopo questa data nessuno potrà registrarsi o prenotare</div>
+          </div>
+          <div style="background:white;border:1px solid #f3f4f6;border-radius:12px;padding:14px;">
+            <div style="font-weight:800;font-size:.9rem;color:var(--text);margin-bottom:8px;">⏱ Scadenza sessione (ore)</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="number" id="sessionHours" class="admin-input" min="1" max="72" value="24" style="width:100px;">
+              <button class="btn-save" onclick="saveSessionHours()">Salva</button>
+            </div>
+          </div>
+        </div>
+    
         <!-- Email blast -->
         <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:14px;padding:18px;margin-bottom:16px">
           <h3 style="font-size:.95rem;font-weight:800;margin-bottom:6px;color:#1d4ed8">📨 Invia email a tutti gli utenti</h3>
