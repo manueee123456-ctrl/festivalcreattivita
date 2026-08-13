@@ -1918,7 +1918,7 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
             <textarea class="admin-input" id="adm-intro-desc" rows="3" style="resize:none;"></textarea></div>
           <div class="form-group"><label class="form-label">Tag (separati da virgola, es. Sport,Squadra,Outdoor)</label>
             <input class="admin-input" id="adm-intro-tags"></div>
-          <div class="form-group"><label class="form-label">Giorno (es. 1 Set)</label>
+          <div class="form-group"><label class="form-label">Giorno (es. 2 Set)</label>
             <input class="admin-input" id="adm-intro-day" style="max-width:100px;"></div>
           <button class="btn-save" onclick="saveIntroCard()">💾 Salva card</button>
         </div>
@@ -1980,7 +1980,7 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
           <div style="display:flex;align-items:center;justify-content:space-between;background:white;border:1px solid #f3f4f6;border-radius:12px;padding:14px;margin-bottom:10px;">
             <div>
               <div style="font-weight:800;font-size:.9rem;color:var(--text)">⏸ Modalità pausa</div>
-              <div style="font-saize:.75rem;color:#9ca3af;">Blocca temporaneamente tutte le prenotazioni</div>
+              <div style="font-size:.75rem;color:#9ca3af;">Blocca temporaneamente tutte le prenotazioni</div>
             </div>
             <button id="pauseBtn" onclick="togglePause()" style="background:#f3f4f6;border:none;padding:8px 18px;border-radius:50px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;color:#6b7280;">⏸ Attiva pausa</button>
           </div>
@@ -3023,28 +3023,28 @@ function getCapacityClass(n, cap) {
 // ==================== INTRO ATTIVITÀ ====================
 // Default descriptions for each activity — editable from admin
 let introData = [
-  { id:'sport', emoji:'🥏', name:'Sport & Movimento', cat:'scat-sport', day:'1 Set',
+  { id:'sport', emoji:'🥏', name:'Sport & Movimento', cat:'scat-sport', day:'2 Set',
     desc:"Mettiti alla prova con attività sportive coinvolgenti! Frisbee, sport inclusivo e tanto altro per scoprire il valore del gioco di squadra, della competizione sana e dell'attività fisica.",
     tags:['Outdoor','Squadra','Movimento','Inclusivo'] },
-  { id:'arte', emoji:'🎨', name:'Arte & Creatività', cat:'scat-arte', day:'1–2 Set',
+  { id:'arte', emoji:'🎨', name:'Arte & Creatività', cat:'scat-arte', day:'2-3 Set',
     desc:"Fotografia, riciclo creativo, progettazione di spazi e il make up del passato: esplora il tuo lato artistico con laboratori pratici guidati da esperti.",
     tags:['Fotografia','Design','Riciclo','Storia'] },
-  { id:'natura', emoji:'🌿', name:'Natura & Sostenibilità', cat:'scat-natura', day:'1 Set',
+  { id:'natura', emoji:'🌿', name:'Natura & Sostenibilità', cat:'scat-natura', day:'2 Set',
     desc:"Dalla caccia al tesoro botanica al kokedama, passando per la riparazione biciclette: impara a rispettare e valorizzare l'ambiente che ci circonda.",
     tags:['Giardinaggio','Botanica','Bici','Eco'] },
-  { id:'mente', emoji:'🧠', name:'Scienze & Mente', cat:'scat-mente', day:'1–2 Set',
+  { id:'mente', emoji:'🧠', name:'Scienze & Mente', cat:'scat-mente', day:'2-3 Set',
     desc:"Chimica, psicologia, filosofia e scrittura creativa con l'IA: sfida il tuo intelletto e scopri nuovi modi di pensare al mondo e a te stesso.",
     tags:['Psicologia','Filosofia','IA','Chimica'] },
-  { id:'cucina', emoji:'👨‍🍳', name:'Cucina & Gusto', cat:'scat-cucina', day:'2 Set',
+  { id:'cucina', emoji:'👨‍🍳', name:'Cucina & Gusto', cat:'scat-cucina', day:'3 Set',
     desc:'Metti le mani in pasta! Un laboratorio di cucina dove preparerai ricette vere insieme ai tuoi compagni. Perché cucinare è creatività, cultura e tanto gusto.',
     tags:['Ricette','Laboratorio','Team','Gusto'] },
-  { id:'lingue', emoji:'🌍', name:'Lingue & Culture', cat:'scat-lingue', day:'3 Set',
+  { id:'lingue', emoji:'🌍', name:'Lingue & Culture', cat:'scat-lingue', day:'4 Set',
     desc:"Biblioteche umane, alfabeto cinese e thailandese: un viaggio tra culture del mondo per aprire la mente e abbattere le barriere linguistiche.",
     tags:['Cinese','Lingue','Culture','Globale'] },
-  { id:'sociale', emoji:'✊', name:'Impegno Civile', cat:'scat-sociale', day:'2–3 Set',
+  { id:'sociale', emoji:'✊', name:'Impegno Civile', cat:'scat-sociale', day:'3-4 Set',
     desc:"Debate, swap party di moda sostenibile e performance contro la mafia e la violenza di genere: impara a usare la voce per cambiare le cose.",
     tags:['Debate','Moda','Giustizia','Sostenibilità'] },
-  { id:'teatro', emoji:'🎭', name:'Teatro & Cinema', cat:'scat-teatro', day:'2–3 Set',
+  { id:'teatro', emoji:'🎭', name:'Teatro & Cinema', cat:'scat-teatro', day:'3-4 Set',
     desc:"Improvvisazione teatrale, giochi di ruolo e ciak si gira! Sali sul palco, entra in un personaggio e scopri il potere narrativo del teatro e del cinema.",
     tags:['Improvvisazione','GDR','Cinema','Palco'] },
 ];
