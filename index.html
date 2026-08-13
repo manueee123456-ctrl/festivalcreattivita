@@ -98,6 +98,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 :root {
@@ -1228,7 +1229,7 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
 
 <!-- ===== BANNER ASSISTENZA (EMAIL) ===== -->
 <div class="help-banner" id="helpBanner">
-  <span>💬 Hai bisogno di assistenza? Scrivici a <a href="/cdn-cgi/l/email-protection#620110070316160b140b16030f0b10030f0310074441545659050f030b0e4c010d0f">creattivitamiramare&#64;gmail.com</a></span>
+  <span>💬 Hai bisogno di assistenza? Scrivici a <a href="/cdn-cgi/l/email-protection#4b28392e2a3f3f223d223f2a2622392a262a392e6d687d7f702c262a222765282426">creattivitamiramare&#64;gmail.com</a></span>
   <button class="help-banner-close" onclick="closeHelpBanner()" aria-label="Chiudi">✕</button>
 </div>
 
@@ -1414,7 +1415,7 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
       </div>
     </div>
     <div class="lang-loading" id="langLoading">🌍 Traduzione…</div>
-    <a href="/cdn-cgi/l/email-protection#650617000411110c130c1104080c170408041700434653515e0208040c094b060a08" title="Scrivici" style="display:flex;align-items:center;gap:4px;background:linear-gradient(135deg,var(--pink),var(--purple));color:white;padding:6px 12px;border-radius:50px;font-size:.72rem;font-weight:800;text-decoration:none;white-space:nowrap;">📧 <span class="email-nav-label">creattivitamiramare&#64;gmail.com</span></a>
+    <a href="/cdn-cgi/l/email-protection#026170676376766b746b76636f6b70636f6370672421343639656f636b6e2c616d6f" title="Scrivici" style="display:flex;align-items:center;gap:4px;background:linear-gradient(135deg,var(--pink),var(--purple));color:white;padding:6px 12px;border-radius:50px;font-size:.72rem;font-weight:800;text-decoration:none;white-space:nowrap;">📧 <span class="email-nav-label">creattivitamiramare&#64;gmail.com</span></a>
     <button id="darkModeBtn" class="dark-btn" onclick="toggleDarkMode()" title="Tema scuro/chiaro">🌙</button>
     <button class="btn-nav-login" onclick="openAuth()">🔑 Accedi / Registrati</button>
   </div>
@@ -2087,7 +2088,7 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
           <div style="font-size:.72rem;color:rgba(255,255,255,.6);margin-top:1px;" id="controlloRoleName">Controllore QR</div>
         </div>
       </div>
-      <button onclick="controlloLogout()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:white;padding:8px 18px;border-radius:50px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;">Esci</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button onclick="controlloClose()" style="background:linear-gradient(135deg,#22c55e,#16a34a);border:none;color:white;padding:8px 18px;border-radius:50px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;">🌐 Vai al sito</button><button onclick="controlloLogout()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:white;padding:8px 18px;border-radius:50px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;">Esci</button></div>
     </div>
 
     <!-- Tab nav -->
@@ -2480,7 +2481,7 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
       <div class="chisiamo-card chisiamo-card-accent">
         <div class="chisiamo-icon-badge">📧</div>
         <div class="chisiamo-card-title">Contatti</div>
-        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#fc9f8e999d8888958a95889d91958e9d919d8e99dadfcac8c79b919d9590d29f9391" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
+        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#85e6f7e0e4f1f1ecf3ecf1e4e8ecf7e4e8e4f7e0a3a6b3b1bee2e8e4ece9abe6eae8" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
       </div>
     </div>
 
@@ -2514,7 +2515,7 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
 <footer>
   <strong>Festival della Didattica Creativa</strong><br>
   <small>2–4 Settembre 2026 · A.S. 2026/2027 🌟</small><br>
-  <small>📧 Scrivici: <a href="/cdn-cgi/l/email-protection#8eedfcebeffafae7f8e7faefe3e7fcefe3effceba8adb8bab5e9e3efe7e2a0ede1e3" style="color:inherit;text-decoration:underline;font-weight:800;">creattivitamiramare&#64;gmail.com</a></small>
+  <small>📧 Scrivici: <a href="/cdn-cgi/l/email-protection#690a1b0c081d1d001f001d0804001b0804081b0c4f4a5f5d520e04080005470a0604" style="color:inherit;text-decoration:underline;font-weight:800;">creattivitamiramare&#64;gmail.com</a></small>
   <div class="footer-credit">🖥️ Sito realizzato da <b>Manuel Magnani</b></div>
 </footer>
 
@@ -5261,18 +5262,30 @@ function startQRScan() {
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0);
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    // Usa BarcodeDetector se disponibile
+    // 1) Usa BarcodeDetector se disponibile
     if ('BarcodeDetector' in window) {
       new BarcodeDetector({ formats: ['qr_code'] })
         .detect(canvas)
         .then(codes => {
-          if (codes.length > 0) {
+          if (codes && codes.length > 0) {
             const text = codes[0].rawValue;
-            stopCamera();
-            document.getElementById('controllerQRInput').value = text;
-            processQRText(text);
+            if (text) {
+              stopCamera();
+              document.getElementById('controllerQRInput').value = text;
+              processQRText(text);
+            }
           }
         }).catch(()=>{});
+    }
+    // 2) Fallback jsQR (se BarcodeDetector non disponibile)
+    else if (typeof jsQR !== 'undefined') {
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (code && code.data) {
+        const text = code.data;
+        stopCamera();
+        document.getElementById('controllerQRInput').value = text;
+        processQRText(text);
+      }
     }
   }, 500);
 }
@@ -5304,6 +5317,11 @@ function openControlloMenu(role) {
   ctrlSwitch('qr', document.getElementById('ctrlTab-qr'));
 }
 
+function controlloClose() {
+  ctrlStopCamera();
+  document.getElementById('controlloOverlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
 function controlloLogout() {
   ctrlStopCamera();
   currentUser = null;
@@ -5383,11 +5401,23 @@ function ctrlScanFrame() {
   const ctx=canvas.getContext('2d');
   ctx.drawImage(video,0,0);
   try {
-    const img=ctx.getImageData(0,0,canvas.width,canvas.height);
-    // jsQR se disponibile
+    // 1) Usa BarcodeDetector nativo se disponibile (mobile/desktop moderni)
+    if ('BarcodeDetector' in window) {
+      try {
+        new BarcodeDetector({ formats: ['qr_code'] }).detect(canvas).then(codes => {
+          if (codes && codes.length > 0) {
+            const text = codes[0].rawValue;
+            if (text) { ctrlStopCamera(); ctrlProcessQR(text); }
+          }
+        }).catch(()=>{});
+        return;
+      } catch(e){}
+    }
+    // 2) Fallback jsQR (orizzontale o dimensione non supportata da BarcodeDetector)
     if(typeof jsQR!=='undefined') {
+      const img=ctx.getImageData(0,0,canvas.width,canvas.height);
       const code=jsQR(img.data,img.width,img.height);
-      if(code){ ctrlStopCamera(); ctrlProcessQR(code.data); }
+      if(code && code.data){ ctrlStopCamera(); ctrlProcessQR(code.data); }
     }
   } catch(e){}
 }
@@ -6725,5 +6755,5 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWi
   </button>
 </div>
 
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a781769a4c1428',t:'MTc4NjYyMTg2Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
