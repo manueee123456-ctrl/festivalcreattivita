@@ -877,6 +877,24 @@ body.dark .annunci-body-img { filter:brightness(.9); }
 .annunci-card-img .annunci-card-body { margin-left:18px; margin-right:18px; }
 .annunci-card-img .annunci-card-body { padding-bottom:16px; }
 .annunci-card-img .annunci-card-top { margin-top:4px; }
+/* Schede pagina annunci */
+.annunci-tabs { display:flex; gap:8px; justify-content:center; margin:24px 16px 0; flex-wrap:wrap; }
+.annunci-tab { background:#fff; border:2px solid #f3e8ff; color:#6b7280; padding:10px 20px; border-radius:50px; font-family:'Nunito',sans-serif; font-weight:800; font-size:.9rem; cursor:pointer; transition:all .25s; }
+.annunci-tab.active { background:linear-gradient(135deg,var(--pink),var(--purple)); color:#fff; border-color:transparent; box-shadow:0 6px 18px rgba(168,85,247,.3); }
+.annunci-panel { animation:fadeInUp .3s ease both; }
+body.dark .annunci-tab { background:#16112e; border-color:#3d2a6e; color:#a89fcc; }
+body.dark .annunci-tab.active { background:linear-gradient(135deg,#d946a8,#9333ea); color:#fff; }
+/* Box informazioni */
+.info-box { background:linear-gradient(135deg,#ffffff,#f5f3ff); border:1.5px solid #e9d5ff; border-radius:18px; padding:22px 26px; box-shadow:0 8px 24px rgba(124,58,237,.12); }
+.info-box h3 { font-size:1.05rem; font-weight:900; color:var(--purple); margin-bottom:14px; }
+.info-box ul { list-style:none; margin:0; padding:0; }
+.info-box li { padding:9px 0; border-bottom:1px dashed #f3e8ff; font-size:.9rem; color:#4b5563; line-height:1.6; }
+.info-box li:last-child { border-bottom:none; }
+.info-box b { color:var(--text); }
+body.dark .info-box { background:linear-gradient(135deg,#1e1640,#16112e); border-color:rgba(147,51,234,.35); }
+body.dark .info-box h3 { color:#c084fc; }
+body.dark .info-box li { color:#a89fcc; border-color:#3d2a6e; }
+body.dark .info-box b { color:#e8e0ff; }
 .annunci-featured-label { text-align:center; font-weight:800; letter-spacing:1px; text-transform:uppercase; font-size:.8rem; color:var(--purple); margin:0 0 16px; }
 .annunci-card .post-label { display:inline-block; margin-bottom:10px; font-size:.68rem; font-weight:800; letter-spacing:.5px; text-transform:uppercase; padding:4px 10px; border-radius:50px; color:#fff; }
 body.dark .annunci-featured-label { color:#c084fc; }
@@ -1232,7 +1250,7 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
 
 <!-- ===== BANNER ASSISTENZA (EMAIL) ===== -->
 <div class="help-banner" id="helpBanner">
-  <span>💬 Hai bisogno di assistenza? Scrivici a <a href="/cdn-cgi/l/email-protection#721100171306061b041b06131f1b00131f1300175451444649151f131b1e5c111d1f">creattivitamiramare&#64;gmail.com</a></span>
+  <span>💬 Hai bisogno di assistenza? Scrivici a <a href="/cdn-cgi/l/email-protection#f29180979386869b849b86939f9b80939f938097d4d1c4c6c9959f939b9edc919d9f">creattivitamiramare&#64;gmail.com</a></span>
   <button class="help-banner-close" onclick="closeHelpBanner()" aria-label="Chiudi">✕</button>
 </div>
 
@@ -1418,7 +1436,7 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
       </div>
     </div>
     <div class="lang-loading" id="langLoading">🌍 Traduzione…</div>
-    <a href="/cdn-cgi/l/email-protection#f49786919580809d829d8095999d869599958691d2d7c2c0cf9399959d98da979b99" title="Scrivici" style="display:flex;align-items:center;gap:4px;background:linear-gradient(135deg,var(--pink),var(--purple));color:white;padding:6px 12px;border-radius:50px;font-size:.72rem;font-weight:800;text-decoration:none;white-space:nowrap;">📧 <span class="email-nav-label">creattivitamiramare&#64;gmail.com</span></a>
+    <a href="/cdn-cgi/l/email-protection#650617000411110c130c1104080c170408041700434653515e0208040c094b060a08" title="Scrivici" style="display:flex;align-items:center;gap:4px;background:linear-gradient(135deg,var(--pink),var(--purple));color:white;padding:6px 12px;border-radius:50px;font-size:.72rem;font-weight:800;text-decoration:none;white-space:nowrap;">📧 <span class="email-nav-label">creattivitamiramare&#64;gmail.com</span></a>
     <button id="darkModeBtn" class="dark-btn" onclick="toggleDarkMode()" title="Tema scuro/chiaro">🌙</button>
     <button class="btn-nav-login" onclick="openAuth()">🔑 Accedi / Registrati</button>
   </div>
@@ -1918,7 +1936,7 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
             <textarea class="admin-input" id="adm-intro-desc" rows="3" style="resize:none;"></textarea></div>
           <div class="form-group"><label class="form-label">Tag (separati da virgola, es. Sport,Squadra,Outdoor)</label>
             <input class="admin-input" id="adm-intro-tags"></div>
-          <div class="form-group"><label class="form-label">Giorno (es. 2 Set)</label>
+          <div class="form-group"><label class="form-label">Giorno (es. 1 Set)</label>
             <input class="admin-input" id="adm-intro-day" style="max-width:100px;"></div>
           <button class="btn-save" onclick="saveIntroCard()">💾 Salva card</button>
         </div>
@@ -1980,7 +1998,7 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
           <div style="display:flex;align-items:center;justify-content:space-between;background:white;border:1px solid #f3f4f6;border-radius:12px;padding:14px;margin-bottom:10px;">
             <div>
               <div style="font-weight:800;font-size:.9rem;color:var(--text)">⏸ Modalità pausa</div>
-              <div style="font-size:.75rem;color:#9ca3af;">Blocca temporaneamente tutte le prenotazioni</div>
+              <div style="font-saize:.75rem;color:#9ca3af;">Blocca temporaneamente tutte le prenotazioni</div>
             </div>
             <button id="pauseBtn" onclick="togglePause()" style="background:#f3f4f6;border:none;padding:8px 18px;border-radius:50px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;color:#6b7280;">⏸ Attiva pausa</button>
           </div>
@@ -2360,8 +2378,58 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
         <div class="form-group"><label class="form-label">Nome *</label><input class="form-input" id="fNome" type="text" placeholder="Il tuo nome"></div>
         <div class="form-group"><label class="form-label">Cognome *</label><input class="form-input" id="fCognome" type="text" placeholder="Il tuo cognome"></div>
       </div>
-      <div class="form-group"><label class="form-label">Età del/la partecipante *</label>
-        <input class="form-input" id="fEta" type="number" min="1" max="99" placeholder="Quanti anni hai?">
+      <div class="form-group">
+        <label class="form-label">Età partecipanti (max 3) *</label>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;">
+          <div>
+            <label style="font-size:.68rem;color:#9ca3af;font-weight:600;">Partecipante 1</label>
+            <select class="form-select" id="fEta1" style="width:100%;min-width:0;"><option value="" disabled selected>Scegli età</option>
+          <option value="5">5 anni</option>
+          <option value="6">6 anni</option>
+          <option value="7">7 anni</option>
+          <option value="8">8 anni</option>
+          <option value="9">9 anni</option>
+          <option value="10">10 anni</option>
+          <option value="11">11 anni</option>
+          <option value="12">12 anni</option>
+          <option value="13">13 anni</option>
+          <option value="14">14 anni</option>
+          <option value="15">15 anni</option>
+          <option value="16">16 anni</option></select>
+          </div>
+          <div>
+            <label style="font-size:.68rem;color:#9ca3af;font-weight:600;">Partecipante 2</label>
+            <select class="form-select" id="fEta2" style="width:100%;min-width:0;"><option value="" disabled selected>Scegli età</option>
+          <option value="5">5 anni</option>
+          <option value="6">6 anni</option>
+          <option value="7">7 anni</option>
+          <option value="8">8 anni</option>
+          <option value="9">9 anni</option>
+          <option value="10">10 anni</option>
+          <option value="11">11 anni</option>
+          <option value="12">12 anni</option>
+          <option value="13">13 anni</option>
+          <option value="14">14 anni</option>
+          <option value="15">15 anni</option>
+          <option value="16">16 anni</option></select>
+          </div>
+          <div>
+            <label style="font-size:.68rem;color:#9ca3af;font-weight:600;">Partecipante 3</label>
+            <select class="form-select" id="fEta3" style="width:100%;min-width:0;"><option value="" disabled selected>Scegli età</option>
+          <option value="5">5 anni</option>
+          <option value="6">6 anni</option>
+          <option value="7">7 anni</option>
+          <option value="8">8 anni</option>
+          <option value="9">9 anni</option>
+          <option value="10">10 anni</option>
+          <option value="11">11 anni</option>
+          <option value="12">12 anni</option>
+          <option value="13">13 anni</option>
+          <option value="14">14 anni</option>
+          <option value="15">15 anni</option>
+          <option value="16">16 anni</option></select>
+          </div>
+        </div>
       </div>
       <div class="form-group"><label class="form-label">N° partecipanti</label>
         <select class="form-select" id="fNum">
@@ -2379,6 +2447,15 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
           <span style="background:#f3f4f6;color:#9ca3af;padding:2px 8px;border-radius:50px;font-size:.68rem;font-weight:600;text-transform:none;letter-spacing:0;">Opzionale</span>
         </label>
         <textarea class="form-input" id="fNote" rows="3" placeholder="Es. ho un'allergia al polline 🌿 · ho difficoltà motorie · preferisco lavorare in gruppo · sono vegetariano 🥗 · ho già esperienza con questa attività…" style="resize:none;line-height:1.5;font-size:.88rem;"></textarea>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
+          <label class="form-label" style="margin:0;flex-shrink:0;">Accompagnato dal genitore?</label>
+          <select class="form-select" id="fAccompagnato" style="flex:1;min-width:130px;">
+            <option value="">Preferisco non specificare</option>
+            <option value="si">Sì</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div style="font-size:.72rem;color:#9ca3af;margin-top:6px;">ℹ️ Se accompagnato dal genitore, non è garantita la completa attività.</div>
         <div style="font-size:.72rem;color:#9ca3af;margin-top:4px;">Queste informazioni saranno visibili solo all'organizzatore.</div>
       </div>
     </div>
@@ -2484,7 +2561,7 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
       <div class="chisiamo-card chisiamo-card-accent">
         <div class="chisiamo-icon-badge">📧</div>
         <div class="chisiamo-card-title">Contatti</div>
-        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#ddbeafb8bca9a9b4abb4a9bcb0b4afbcb0bcafb8fbfeebe9e6bab0bcb4b1f3beb2b0" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
+        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#f192839490858598879885909c9883909c908394d7d2c7c5ca969c90989ddf929e9c" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
       </div>
     </div>
 
@@ -2518,7 +2595,7 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
 <footer>
   <strong>Festival della Didattica Creativa</strong><br>
   <small>2–4 Settembre 2026 · A.S. 2026/2027 🌟</small><br>
-  <small>📧 Scrivici: <a href="/cdn-cgi/l/email-protection#6a09180f0b1e1e031c031e0b0703180b070b180f4c495c5e510d070b030644090507" style="color:inherit;text-decoration:underline;font-weight:800;">creattivitamiramare&#64;gmail.com</a></small>
+  <small>📧 Scrivici: <a href="/cdn-cgi/l/email-protection#f69584939782829f809f82979b9f84979b978493d0d5c0c2cd919b979f9ad895999b" style="color:inherit;text-decoration:underline;font-weight:800;">creattivitamiramare&#64;gmail.com</a></small>
   <div class="footer-credit">🖥️ Sito creato da <b>Manuel Magnani</b> in collaborazione col <b>Gruppo Civivo Creattività</b></div>
 </footer>
 
@@ -2612,8 +2689,32 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
       <p>Aggiornamenti in tempo reale dal team organizzativo del festival</p>
     </div>
   </div>
-    <div class="annunci-section" style="padding-top:28px;">
-    <div class="annunci-featured-label">📌 Annunci ufficiali</div>
+
+    <!-- ===== SCHEDE ANNUNCI ===== -->
+    <div class="annunci-tabs">
+      <button class="annunci-tab" id="annTab-info" onclick="annunciTab('info')">ℹ️ Informazioni generali</button>
+      <button class="annunci-tab active" id="annTab-annunci" onclick="annunciTab('annunci')">📢 Annunci</button>
+    </div>
+
+    <!-- TAB: Informazioni generali -->
+    <div id="annunciTabInfo" class="annunci-panel" style="display:none;">
+      <div class="annunci-section">
+        <div class="info-box">
+          <h3>ℹ️ Informazioni generali</h3>
+          <ul>
+            <li><b>📅 Quando:</b> dal 2 al 4 settembre 2026</li>
+            <li><b>📍 Dove:</b> Scuola Di Duccio (2-3 settembre) · Casina CiViVo, Parco Spina Verde (4 settembre)</li>
+            <li><b>👧👦 Per chi:</b> ragazzi dai 5 ai 16 anni</li>
+            <li><b>🎟️ Costo:</b> gratuito, ingresso libero</li>
+            <li><b>📋 Prenotazioni:</b> dal sito, massimo 3 partecipanti a prenotazione</li>
+            <li><b>🕊️ Eventi aperti a tutti:</b> Flash Mob per la Pace (4 sett, 18:00) · Cinema sotto le stelle (3 sett, 21:00)</li>
+            <li><b>📧 Contatti:</b> creattivitamiramare&#64;gmail.com</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="annunci-section">
+      <div class="annunci-featured-label">📌 Annunci ufficiali</div>
 <div class="annunci-card">
         <span class="post-label" style="background:#15803d;">🏛️ Patrocinio</span>
         <div class="annunci-card-top">
@@ -2683,10 +2784,14 @@ body.dark .sponsor-credit b { color:#c4b5fd; }
         <div class="annunci-card-body">Ecco un assaggio dei nostri laboratori creativi! 🎨✨ In questi mesi estivi non ci siamo mai fermati: per preparare al meglio l'appuntamento di settembre con Creattività, abbiamo testato, sperimentato e messo alla prova tantissime idee insieme ai ragazzi.<br><br>È stata un'estate ricca di energia, risate e tanta voglia di fare: dai fornelli alla tecnologia, dall'arte alla natura.<br><br>🎨 <b>Arte e Colori in Libertà:</b> pennelli, carta, ritagli e tanta fantasia, creando sagome, collage e opere collettive piene di colore.<br><br>Manca pochissimo: ti aspettiamo dal <b>2 al 4 settembre</b>! La <b>Scuola Di Duccio</b>, il <b>Parco Spina Verde</b> e la <b>Casina CiViVo</b> si riempiranno di energia con tre giornate dedicate ai ragazzi dai 10 ai 14 anni. Pronti a vivere il festival insieme? Consulta il Programma Ufficiale e preparatevi a divertirvi con noi!</div>
       </div>
   </div>
+    </div>
 
+    <!-- TAB: Annunci (solo annunci admin) -->
+    <div id="annunciTabList" class="annunci-panel">
   <div class="annunci-section" id="annunciContainer">
     <!-- rendered by JS -->
   </div>
+    </div><!-- /annunciTabList -->
 </div><!-- /page-annunci -->
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
@@ -3023,28 +3128,28 @@ function getCapacityClass(n, cap) {
 // ==================== INTRO ATTIVITÀ ====================
 // Default descriptions for each activity — editable from admin
 let introData = [
-  { id:'sport', emoji:'🥏', name:'Sport & Movimento', cat:'scat-sport', day:'2 Set',
+  { id:'sport', emoji:'🥏', name:'Sport & Movimento', cat:'scat-sport', day:'1 Set',
     desc:"Mettiti alla prova con attività sportive coinvolgenti! Frisbee, sport inclusivo e tanto altro per scoprire il valore del gioco di squadra, della competizione sana e dell'attività fisica.",
     tags:['Outdoor','Squadra','Movimento','Inclusivo'] },
-  { id:'arte', emoji:'🎨', name:'Arte & Creatività', cat:'scat-arte', day:'2-3 Set',
+  { id:'arte', emoji:'🎨', name:'Arte & Creatività', cat:'scat-arte', day:'1–2 Set',
     desc:"Fotografia, riciclo creativo, progettazione di spazi e il make up del passato: esplora il tuo lato artistico con laboratori pratici guidati da esperti.",
     tags:['Fotografia','Design','Riciclo','Storia'] },
-  { id:'natura', emoji:'🌿', name:'Natura & Sostenibilità', cat:'scat-natura', day:'2 Set',
+  { id:'natura', emoji:'🌿', name:'Natura & Sostenibilità', cat:'scat-natura', day:'1 Set',
     desc:"Dalla caccia al tesoro botanica al kokedama, passando per la riparazione biciclette: impara a rispettare e valorizzare l'ambiente che ci circonda.",
     tags:['Giardinaggio','Botanica','Bici','Eco'] },
-  { id:'mente', emoji:'🧠', name:'Scienze & Mente', cat:'scat-mente', day:'2-3 Set',
+  { id:'mente', emoji:'🧠', name:'Scienze & Mente', cat:'scat-mente', day:'1–2 Set',
     desc:"Chimica, psicologia, filosofia e scrittura creativa con l'IA: sfida il tuo intelletto e scopri nuovi modi di pensare al mondo e a te stesso.",
     tags:['Psicologia','Filosofia','IA','Chimica'] },
-  { id:'cucina', emoji:'👨‍🍳', name:'Cucina & Gusto', cat:'scat-cucina', day:'3 Set',
+  { id:'cucina', emoji:'👨‍🍳', name:'Cucina & Gusto', cat:'scat-cucina', day:'2 Set',
     desc:'Metti le mani in pasta! Un laboratorio di cucina dove preparerai ricette vere insieme ai tuoi compagni. Perché cucinare è creatività, cultura e tanto gusto.',
     tags:['Ricette','Laboratorio','Team','Gusto'] },
-  { id:'lingue', emoji:'🌍', name:'Lingue & Culture', cat:'scat-lingue', day:'4 Set',
+  { id:'lingue', emoji:'🌍', name:'Lingue & Culture', cat:'scat-lingue', day:'3 Set',
     desc:"Biblioteche umane, alfabeto cinese e thailandese: un viaggio tra culture del mondo per aprire la mente e abbattere le barriere linguistiche.",
     tags:['Cinese','Lingue','Culture','Globale'] },
-  { id:'sociale', emoji:'✊', name:'Impegno Civile', cat:'scat-sociale', day:'3-4 Set',
+  { id:'sociale', emoji:'✊', name:'Impegno Civile', cat:'scat-sociale', day:'2–3 Set',
     desc:"Debate, swap party di moda sostenibile e performance contro la mafia e la violenza di genere: impara a usare la voce per cambiare le cose.",
     tags:['Debate','Moda','Giustizia','Sostenibilità'] },
-  { id:'teatro', emoji:'🎭', name:'Teatro & Cinema', cat:'scat-teatro', day:'3-4 Set',
+  { id:'teatro', emoji:'🎭', name:'Teatro & Cinema', cat:'scat-teatro', day:'2–3 Set',
     desc:"Improvvisazione teatrale, giochi di ruolo e ciak si gira! Sali sul palco, entra in un personaggio e scopri il potere narrativo del teatro e del cinema.",
     tags:['Improvvisazione','GDR','Cinema','Palco'] },
 ];
@@ -3283,9 +3388,12 @@ function openModal(id) {
   document.getElementById('modalDay').textContent = '📅 '+dayNames[currentAct.day] + (currentAct.time ? ' · 🕒 '+currentAct.time : '');
   document.getElementById('fNome').value='';
   document.getElementById('fCognome').value='';
-  document.getElementById('fEta').value='';
+  document.getElementById('fEta1').value='';
+  document.getElementById('fEta2').value='';
+  document.getElementById('fEta3').value='';
   document.getElementById('fNum').value='1';
   document.getElementById('fNote').value='';
+  const acc=document.getElementById('fAccompagnato'); if(acc) acc.value='';
   document.getElementById('fOrario').value = currentAct.time || '';
   document.getElementById('modalOverlay').classList.add('open');
 }
@@ -3294,14 +3402,28 @@ function closeModal() { document.getElementById('modalOverlay').classList.remove
 async function confirmBooking() {
   const nome   = document.getElementById('fNome').value.trim();
   const cognome= document.getElementById('fCognome').value.trim();
-  const eta    = parseInt(document.getElementById('fEta').value) || null;
+  const e1 = parseInt(document.getElementById('fEta1').value) || null;
+  const e2 = parseInt(document.getElementById('fEta2').value) || null;
+  const e3 = parseInt(document.getElementById('fEta3').value) || null;
   const num    = parseInt(document.getElementById('fNum').value) || 1;
   const orario = document.getElementById('fOrario').value;
   const note   = document.getElementById('fNote').value.trim();
+  const accSel = document.getElementById('fAccompagnato');
+  const accompagnato = accSel ? accSel.value : '';
 
   if (!nome||!cognome)  { showToast('⚠️ Inserisci nome e cognome'); return; }
-  if (!eta || eta < 1 || eta > 99) { showToast('⚠️ Inserisci l\'età del/la partecipante'); return; }
+  if (!e1 || e1 < 5 || e1 > 16) { showToast('⚠️ Seleziona l\'età del 1° partecipante'); return; }
+  if (num > 1 && (!e2 || e2 < 5 || e2 > 16)) { showToast('⚠️ Seleziona l\'età del 2° partecipante'); return; }
+  if (num > 2 && (!e3 || e3 < 5 || e3 > 16)) { showToast('⚠️ Seleziona l\'età del 3° partecipante'); return; }
   if (num < 1 || num > 3) { showToast('⚠️ Massimo 3 partecipanti per prenotazione'); return; }
+
+  // Elenco delle età dei partecipanti (in base al numero selezionato)
+  const etaArray = [e1];
+  if (num > 1) etaArray.push(e2);
+  if (num > 2) etaArray.push(e3);
+  const eta = etaArray.join(',');
+  let fullNote = note;
+  if (accompagnato) fullNote = (fullNote ? fullNote + ' · ' : '') + 'Accompagnato dal genitore: ' + (accompagnato === 'si' ? 'Sì' : 'No');
   if (counts[currentAct.id] >= capFor(currentAct)) { showToast('😔 Posti esauriti!'); closeModal(); return; }
 
   if (bookings.find(b=>b.id===currentAct.id)) {
@@ -3314,7 +3436,7 @@ async function confirmBooking() {
   const bookingData = {
     ...currentAct,
     nome, cognome, eta, orario, num,
-    note: note || '',
+    note: typeof fullNote !== 'undefined' ? (fullNote || '') : (note || ''),
     userEmail: currentUser ? currentUser.email : 'anonimo',
     timestamp: firebase.firestore.FieldValue.serverTimestamp()
   };
@@ -3866,7 +3988,7 @@ function refreshAdminBookings() {
       const docId = d.id;
       return `<tr>
         <td>${b.nome||'—'}</td><td>${b.cognome||'—'}</td>
-        <td style="color:#6b7280;font-size:.8rem">${b.eta ? b.eta + ' anni' : '—'}</td>
+        <td style="color:#6b7280;font-size:.8rem">${b.eta ? (String(b.eta).indexOf(',')>-1 ? String(b.eta).replace(/,/g, ', ') + ' anni' : b.eta + ' anni') : '—'}</td>
         <td>${b.emoji||''} ${b.title||'—'}</td>
         <td><span class="tag-day">${dayShort[b.day]||((b.day||'?')+' Set')}</span></td>
         <td style="color:#6b7280;font-size:.8rem">${b.num||1} pers.</td>
@@ -5897,9 +6019,16 @@ function refreshAdminAnnunci() {
   const list = document.getElementById('adminAnnunciList');
   if (!list) return;
   list.innerHTML = '<div style="color:#9ca3af;font-size:.85rem;">⏳ Caricamento...</div>';
-  db.collection('annunci').orderBy('timestamp','desc').get().then(snap => {
+  db.collection('annunci').get().then(snap => {
     if (snap.empty) { list.innerHTML = '<div style="color:#9ca3af;font-size:.85rem;padding:8px 0;">Nessun annuncio pubblicato.</div>'; return; }
-    list.innerHTML = snap.docs.map(d => {
+    // Ordinamento esplicito: dal più recente (in alto) al più vecchio (in basso)
+    const docs = snap.docs.slice();
+    docs.sort((a, b) => {
+      const ta = a.data().timestamp ? (a.data().timestamp.toDate ? a.data().timestamp.toDate().getTime() : 0) : 0;
+      const tb = b.data().timestamp ? (b.data().timestamp.toDate ? b.data().timestamp.toDate().getTime() : 0) : 0;
+      return tb - ta;
+    });
+    list.innerHTML = docs.map(d => {
       const a = d.data();
       const ts = a.timestamp?.toDate?.()?.toLocaleString('it-IT') || 'adesso';
       return `<div style="display:flex;align-items:flex-start;justify-content:space-between;background:white;border:1px solid #f3f4f6;border-radius:12px;padding:12px 14px;margin-bottom:8px;gap:10px;">
@@ -5940,12 +6069,37 @@ function isOfficialAnnuncio(a) {
   return false;
 }
 
+function annunciTab(which) {
+  const tabInfo = document.getElementById('annunciTabInfo');
+  const tabList = document.getElementById('annunciTabList');
+  const btnInfo = document.getElementById('annTab-info');
+  const btnAnn  = document.getElementById('annTab-annunci');
+  if (which === 'info') {
+    if (tabInfo) tabInfo.style.display = 'block';
+    if (tabList) tabList.style.display = 'none';
+    if (btnInfo) btnInfo.classList.add('active');
+    if (btnAnn) btnAnn.classList.remove('active');
+  } else {
+    if (tabInfo) tabInfo.style.display = 'none';
+    if (tabList) tabList.style.display = 'block';
+    if (btnAnn) btnAnn.classList.add('active');
+    if (btnInfo) btnInfo.classList.remove('active');
+    renderAnnunci();
+  }
+}
+
 function renderAnnunci() {
   const container = document.getElementById('annunciContainer');
   if (!container) return;
   container.innerHTML = '<div style="text-align:center;padding:24px;color:#9ca3af;font-size:.88rem;">⏳ Caricamento annunci...</div>';
   db.collection('annunci').orderBy('timestamp','desc').get().then(snap => {
-    const docs = snap.docs.filter(d => !isOfficialAnnuncio(d.data()));
+    // Ordinamento esplicito: dal più recente (in alto) al più vecchio (in basso)
+    let docs = snap.docs.filter(d => !isOfficialAnnuncio(d.data()));
+    docs.sort((a, b) => {
+      const ta = a.data().timestamp ? (a.data().timestamp.toDate ? a.data().timestamp.toDate().getTime() : 0) : 0;
+      const tb = b.data().timestamp ? (b.data().timestamp.toDate ? b.data().timestamp.toDate().getTime() : 0) : 0;
+      return tb - ta; // decrescente: più recente primo
+    });
     if (docs.length === 0) {
       container.innerHTML = `<div class="annunci-empty">
         <div class="annunci-empty-icon">📭</div>
@@ -6772,5 +6926,5 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWi
   </button>
 </div>
 
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2ae60eb4a300f7a',t:'MTc4NjY5MzkzMA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
