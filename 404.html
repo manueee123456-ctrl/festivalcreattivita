@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pagina non trovata · Festival della Didattica Creativa</title>
+<meta name="robots" content="noindex">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Nunito','Segoe UI',Arial,sans-serif;
+    background:linear-gradient(135deg,#fce7f3 0%,#f3e8ff 50%,#dbeafe 100%);
+    min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:20px;
+    color:#1e1b4b;
+  }
+  .box { max-width:520px; width:100%; }
+  .code { font-size:6rem; font-weight:900; background:linear-gradient(135deg,#ec4899,#8b5cf6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; line-height:1; }
+  .emoji { font-size:3rem; margin:10px 0; }
+  h1 { font-size:1.6rem; margin-bottom:10px; }
+  p { font-size:.95rem; color:#6b7280; line-height:1.6; margin-bottom:24px; }
+  .btn {
+    display:inline-block; padding:13px 28px; border-radius:50px;
+    background:linear-gradient(135deg,#f472b6,#a855f7); color:#fff;
+    text-decoration:none; font-weight:800; font-size:.95rem;
+    box-shadow:0 6px 20px rgba(168,85,247,.3); transition:all .2s;
+  }
+  .btn:hover { transform:scale(1.04); opacity:.9; }
+  .search { margin-top:26px; }
+  .search input {
+    width:100%; padding:13px 16px; border-radius:50px; border:2px solid #e9d5ff;
+    font-family:inherit; font-size:.9rem; outline:none; background:#fff; color:#1e1b4b;
+  }
+  .search input:focus { border-color:#a855f7; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="emoji">🧭</div>
+    <div class="code">404</div>
+    <h1>Ops, pagina non trovata!</h1>
+    <p>Sembra che tu sia finito fuori dal percorso del Festival. La pagina che cerchi non esiste o è stata spostata — ma il Festival ti aspetta ancora!</p>
+    <a class="btn" href="/">🎟️ Torna al Festival</a>
+    <div class="search">
+      <input type="text" placeholder="🔍 Prova a cercare un'attività…" onkeydown="if(event.key==='Enter'&&this.value.trim())location='/index.html';">
+    </div>
+  </div>
+</body>
+</html>
