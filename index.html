@@ -3531,7 +3531,7 @@ function updatePanel() {
       <div class="panel-item-emoji">${b.emoji}</div>
       <div class="panel-item-info">
         <div class="panel-item-name">${b.title}</div>
-        <div class="panel-item-meta">${b.nome} ${b.cognome} · ${b.num||1} person${(b.num||1)===1?'a':'e'} · ${b.day} Set</div>
+        <div class="panel-item-meta">${b.nome} ${b.cognome} · ${b.num||1} person${(b.num||1)===1?'a':'e'} · ${dayShort[b.day]||((b.day||'?')+' Set')}</div>
       </div>
       <button onclick="${b._docId ? `showQRPanel('${b._docId}')` : `showToast('QR non disponibile')`}" title="Mostra QR" style="background:#f3e8ff;color:#7c3aed;border:none;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;${b._docId?'':'opacity:.4;cursor:not-allowed;'}">📱</button>
       <button class="btn-cancel-booking" onclick="askCancelBooking('${b._docId}')" title="Annulla prenotazione">✕</button>
