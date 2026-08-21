@@ -21,7 +21,9 @@ export const handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
 
-  const { to_email, to_name, verification_code, original_email } = body;
+  const { to_email, to_name, verification_code, original_email, purpose } = body;
+  // purpose: 'register' (default) oppure 'reset' (recupero password)
+  const isReset = (purpose === 'reset');
   // Email di test: reindirizza all'admin (non esiste davvero)
   const TEST_ADMIN = 'manuel.magnani29@gmail.com';
   const isTest = (original_email || to_email || '').toLowerCase().startsWith('test.');
@@ -37,11 +39,11 @@ export const handler = async (event) => {
   const payload = {
     sender: { name: FROM_NAME, email: FROM_EMAIL },
     to: [{ email: finalTo, name: finalName || '' }],
-    subject: '🔐 Il tuo codice di verifica Festival Creattività',
+    subject: isReset ? '🔑 Il tuo codice per reimpostare la password' : '🔐 Il tuo codice di verifica Festival Creattività',
     htmlContent: `
       <div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;">
         <h2 style="color:#7c3aed;">Ciao ${to_name || ''}!</h2>
-        <p>Usa questo codice per completare la registrazione al <strong>Festival della Didattica Creativa</strong>:</p>
+        <p>${isReset ? 'Usa questo codice per <strong>reimpostare la password</strong> del tuo account al Festival della Didattica Creativa:' : 'Usa questo codice per completare la registrazione al <strong>Festival della Didattica Creativa</strong>:'}</p>
         <p style="font-size:2rem;font-weight:900;letter-spacing:8px;color:#7c3aed;background:#f3e8ff;padding:16px 24px;border-radius:14px;text-align:center;">${verification_code}</p>
         <p>Il codice è valido per <strong>10 minuti</strong>.</p>
         <p>Se non hai richiesto tu questo codice, puoi ignorare questa email.</p>
