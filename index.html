@@ -3931,22 +3931,24 @@ function setupResetOtp(){
 async function sendResetOtp(){
   const email=document.getElementById('rEmail2').value.trim().toLowerCase();
   if(!email){ showAuthErr('Inserisci la tua email.'); return; }
-  // Controlla che l'utente esista (localStorage o Firebase, anche con ID documento diverso)
-  let exists = users.find(u=>u.email===email);
-  if(!exists){
-    try{
+  // Controlla se l'utente esiste per mostrare il nome (ma non blocca se non trovato,
+  // così admin e vecchi account possono comunque reimpostare la password)
+  let foundName = '';
+  try{
+    const u = users.find(u=>u.email===email);
+    if(u){ foundName = u.nome||''; }
+    else {
       const d=await db.collection('users').doc(email).get();
-      if(d.exists){ exists=true; }
+      if(d.exists){ foundName = d.data().nome||''; }
       else {
         const snap=await db.collection('users').where('email','==',email).limit(1).get();
-        if(!snap.empty) exists=true;
+        if(!snap.empty) foundName = snap.docs[0].data().nome||'';
       }
-    }catch(e){}
-  }
-  if(!exists){ showAuthErr('Nessun account trovato con questa email.'); return; }
+    }
+  }catch(e){}
   resetOtp = generateOtp();
   document.getElementById('resetSendBtn').textContent='⏳ Invio codice...';
-  const sent = await sendOtpEmail(email, (exists.nome||''), resetOtp, 'reset').catch(()=>false);
+  const sent = await sendOtpEmail(email, foundName, resetOtp, 'reset').catch(()=>false);
   document.getElementById('resetSendBtn').textContent='📧 Invia codice';
   document.getElementById('resetSendBtn').style.display='none';
   document.getElementById('resetCodeBox').style.display='block';
@@ -7314,5 +7316,5 @@ function openCookiePrefs(){
 }
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2ec93698bf1edd7',t:'MTc4NzM0NjExNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2ec96b0fcd5eda8',t:'MTc4NzM0NjI1MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
