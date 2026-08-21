@@ -3847,35 +3847,15 @@ async function sendOtpEmail(email, nome, code, purpose) {
   const actualTo = isTest ? TEST_ADMIN : email;
   const actualName = isTest ? (nome + ' [TEST ' + email + ']') : nome;
 
-  // 1) Tenta di inviare via Brevo (Netlify Function)
-  try {
-    const res = await fetch('/.netlify/functions/send-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to_email: actualTo, to_name: actualName, verification_code: code, original_email: isTest ? email : '', purpose: purpose || 'register' })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data.ok) return data;
-    console.warn('Brevo non disponibile:', data.error || res.status);
-  } catch(err) {
-    console.warn('Brevo fetch error, fallback EmailJS:', err);
-  }
-
-  // 2) Fallback EmailJS
-  try {
-    const result = await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
-      to_email:          actualTo,
-      to_name:           actualName,
-      verification_code: code,
-      purpose:           purpose || 'register',
-      reply_to:          email,
-      from_name:         'Festival della Didattica Creativa',
-    });
-    return result;
-  } catch(err) {
-    console.error('EmailJS error:', JSON.stringify(err));
-    throw err;
-  }
+  // Invia via Brevo (Netlify Function) — unico canale, niente EmailJS
+  const res = await fetch('/.netlify/functions/send-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to_email: actualTo, to_name: actualName, verification_code: code, original_email: isTest ? email : '', purpose: purpose || 'register' })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.ok && data.ok) return data;
+  throw new Error(data.error || ('Invio fallito (' + res.status + ')'));
 }
 
 function resendOtp() {
@@ -7316,5 +7296,5 @@ function openCookiePrefs(){
 }
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2ec96b0fcd5eda8',t:'MTc4NzM0NjI1MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
