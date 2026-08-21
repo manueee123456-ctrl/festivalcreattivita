@@ -1549,6 +1549,7 @@ body.dark .cookie-pref-row { border-color:#3d2a6e; }
         <div class="auth-title">Recupera password 🔑</div>
         <div class="auth-sub" style="margin-bottom:12px;">Inserisci la tua email e ti invieremo un codice per reimpostare la password.</div>
         <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="rEmail2" type="email" placeholder="la-tua@email.com"></div>
+        <div id="resetCodeDisplay" style="display:none;background:#f3e8ff;color:#7c3aed;font-size:1.6rem;font-weight:900;letter-spacing:6px;text-align:center;border-radius:12px;padding:12px;margin-bottom:10px;font-family:monospace;"></div>
         <div id="resetCodeBox" style="display:none;">
           <div class="otp-boxes" style="margin:14px 0;">
             <input class="otp-box" id="rOtp0" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
@@ -3847,15 +3848,35 @@ async function sendOtpEmail(email, nome, code, purpose) {
   const actualTo = isTest ? TEST_ADMIN : email;
   const actualName = isTest ? (nome + ' [TEST ' + email + ']') : nome;
 
-  // Invia via Brevo (Netlify Function) — unico canale, niente EmailJS
-  const res = await fetch('/.netlify/functions/send-otp', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ to_email: actualTo, to_name: actualName, verification_code: code, original_email: isTest ? email : '', purpose: purpose || 'register' })
-  });
-  const data = await res.json().catch(() => ({}));
-  if (res.ok && data.ok) return data;
-  throw new Error(data.error || ('Invio fallito (' + res.status + ')'));
+  // 1) Prova Brevo (Netlify Function)
+  try {
+    const res = await fetch('/.netlify/functions/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to_email: actualTo, to_name: actualName, verification_code: code, original_email: isTest ? email : '', purpose: purpose || 'register' })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok) return { ok: true, channel: 'brevo' };
+    console.warn('Brevo fallback:', data.error || res.status);
+  } catch(err) {
+    console.warn('Brevo error:', err);
+  }
+
+  // 2) Fallback EmailJS
+  try {
+    const result = await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+      to_email:          actualTo,
+      to_name:           actualName,
+      verification_code: code,
+      purpose:           purpose || 'register',
+      reply_to:          email,
+      from_name:         'Festival della Didattica Creativa',
+    });
+    return { ok: true, channel: 'emailjs' };
+  } catch(err) {
+    console.error('EmailJS error:', JSON.stringify(err));
+    throw err;
+  }
 }
 
 function resendOtp() {
@@ -3927,6 +3948,7 @@ async function sendResetOtp(){
     }
   }catch(e){}
   resetOtp = generateOtp();
+  const rcd=document.getElementById('resetCodeDisplay'); if(rcd){ rcd.style.display='block'; rcd.textContent=resetOtp; }
   document.getElementById('resetSendBtn').textContent='⏳ Invio codice...';
   const sent = await sendOtpEmail(email, foundName, resetOtp, 'reset').catch(()=>false);
   document.getElementById('resetSendBtn').textContent='📧 Invia codice';
@@ -4186,7 +4208,7 @@ async function handleAuth() {
     document.getElementById('regSending').classList.remove('active');
     document.getElementById('otpEmailDisplay').textContent = 'Codice inviato a: ' + email;
     const codeEl = document.getElementById('otpCodeDisplay');
-    if (codeEl) codeEl.textContent = ''; // NON mostriamo il codice a schermo
+    if (codeEl) codeEl.textContent = pendingOtp; // backup: mostra il codice a schermo
     showRegStep('step2');
     startOtpTimer();
     setupOtpBoxes();
@@ -7296,5 +7318,5 @@ function openCookiePrefs(){
 }
 </script>
 
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2ecbab69ebced68',t:'MTc4NzM0NzcyNQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
