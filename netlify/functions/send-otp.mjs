@@ -21,14 +21,22 @@ export const handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
 
-  const { to_email, to_name, verification_code } = body;
+  const { to_email, to_name, verification_code, original_email } = body;
+  // Email di test: reindirizza all'admin (non esiste davvero)
+  const TEST_ADMIN = 'manuel.magnani29@gmail.com';
+  const isTest = (original_email || to_email || '').toLowerCase().startsWith('test.');
+  const finalTo = isTest ? TEST_ADMIN : to_email;
+  const finalName = isTest ? ((to_name||'') + ' [TEST ' + (original_email||to_email) + ']') : (to_name||'');
   if (!to_email || !verification_code) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Missing fields' }) };
+  }
+  if (!BREVO_API_KEY) {
+    return { statusCode: 500, body: JSON.stringify({ error: 'BREVO_API_KEY non configurata su Netlify' }) };
   }
 
   const payload = {
     sender: { name: FROM_NAME, email: FROM_EMAIL },
-    to: [{ email: to_email, name: to_name || '' }],
+    to: [{ email: finalTo, name: finalName || '' }],
     subject: '🔐 Il tuo codice di verifica Festival Creattività',
     htmlContent: `
       <div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;">
