@@ -2,8 +2,8 @@
 // Endpoint: /.netlify/functions/send-otp
 // Nota: il progetto ha "type":"module" in package.json, quindi si usa `export const handler`.
 
-const BREVO_API_KEY = process.env.BREVO_API_KEY
-  || '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';
+// ⚠️ La chiave Brevo NON è nel codice: va impostata come variabile d'ambiente BREVO_API_KEY su Netlify.
+const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
 
 const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email';
 const FROM_EMAIL = 'manuel.magnani29@gmail.com';
