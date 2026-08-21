@@ -3611,6 +3611,13 @@ function sanitizeInput(str, maxLen = 500) {
  * Hashing crittografico sicuro e salato lato client (Web Crypto API SHA-256)
  */
 const SECURITY_SALT = 'FDC_2026_SECURITY_SALT_v1';
+async function sha256hex(str){
+  try {
+    const enc=new TextEncoder();
+    const buf=await crypto.subtle.digest('SHA-256', enc.encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  } catch(e){ return ''; }
+}
 async function hashPassword(pass, salt = SECURITY_SALT) {
   if (!pass) return '';
   try {
@@ -3832,12 +3839,19 @@ function getOtpValue() {
 }
 
 async function sendOtpEmail(email, nome, code) {
-  // 1) Tenta di inviare via Brevo (Netlify Function) — funziona sul sito pubblicato
+  // EMAIL DI TEST: se l'email inizia con "test.", reindirizza la notifica all'admin
+  // (non invia davvero all'indirizzo di test, che non esiste)
+  const TEST_ADMIN = 'manuel.magnani29@gmail.com';
+  const isTest = email.toLowerCase().startsWith('test.');
+  const actualTo = isTest ? TEST_ADMIN : email;
+  const actualName = isTest ? (nome + ' [TEST ' + email + ']') : nome;
+
+  // 1) Tenta di inviare via Brevo (Netlify Function)
   try {
     const res = await fetch('/.netlify/functions/send-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to_email: email, to_name: nome, verification_code: code })
+      body: JSON.stringify({ to_email: actualTo, to_name: actualName, verification_code: code, original_email: isTest ? email : '' })
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok && data.ok) return data;
@@ -3846,11 +3860,11 @@ async function sendOtpEmail(email, nome, code) {
     console.warn('Brevo fetch error, fallback EmailJS:', err);
   }
 
-  // 2) Fallback EmailJS (per test locale o se Brevo non configurato)
+  // 2) Fallback EmailJS
   try {
     const result = await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
-      to_email:          email,
-      to_name:           nome,
+      to_email:          actualTo,
+      to_name:           actualName,
       verification_code: code,
       reply_to:          email,
       from_name:         'Festival della Didattica Creativa',
@@ -4037,14 +4051,20 @@ async function handleAuth() {
         return;
       }
     } catch(e) { console.error(e); }
-    // Cerca prima in localStorage, poi su Firebase
+    // Cerca prima in localStorage, poi su Firebase (doc con ID=email, poi query per campo email)
     let user = users.find(u=>u.email===email);
     if (!user) {
-      // Cerca su Firestore
       try {
         const doc = await db.collection('users').doc(email).get();
         if (doc.exists) {
           user = doc.data();
+        } else {
+          // I vecchi account potrebbero avere un ID documento diverso dall'email.
+          // Cerca per campo email con query.
+          const snap = await db.collection('users').where('email','==',email).limit(1).get();
+          if (!snap.empty) { user = snap.docs[0].data(); }
+        }
+        if (user) {
           users.push(user);
           localStorage.setItem('fdc_users', JSON.stringify(users));
         }
@@ -4059,9 +4079,23 @@ async function handleAuth() {
     
     const userPassOk = await verifyPassword(pass, user.passHash);
     if (!userPassOk) {
-      LOGIN_RATE_LIMIT.recordFail(email);
-      showAuthErr('Password non corretta.');
-      return;
+      // Ultimo tentativo: verifica con hash SHA-256 senza salt (vecchi account)
+      const legacyHash = await sha256hex(pass);
+      const okLegacy = (legacyHash === user.passHash);
+      if (!okLegacy) {
+        LOGIN_RATE_LIMIT.recordFail(email);
+        showAuthErr('Password non corretta.');
+        return;
+      }
+    }
+    // Migrazione: aggiorna l'hash al nuovo formato se necessario
+    const newHash = await hashPassword(pass);
+    if (user.passHash !== newHash) {
+      user.passHash = newHash;
+      try { await db.collection('users').doc(email).update({ passHash: newHash }).catch(()=>{}); } catch(e){}
+      const li = users.findIndex(u=>u.email===email);
+      if (li>=0) users[li].passHash = newHash;
+      localStorage.setItem('fdc_users', JSON.stringify(users));
     }
     LOGIN_RATE_LIMIT.reset(email);
     currentUser = trimSafeUser(user);
@@ -7257,5 +7291,5 @@ function openCookiePrefs(){
 }
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2ec65a58ca4edc2',t:'MTc4NzM0NDI0MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2ec6cfafe13edbc',t:'MTc4NzM0NDU0MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
