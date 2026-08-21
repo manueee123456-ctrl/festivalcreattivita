@@ -1,18 +1,21 @@
 /*
   # HTTPS & HSTS
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-  
+
   # Anti-Clickjacking
   X-Frame-Options: SAMEORIGIN
-  
+
   # Anti-MIME Sniffing
   X-Content-Type-Options: nosniff
-  
+
   # Referrer Policy
   Referrer-Policy: strict-origin-when-cross-origin
-  
+
   # Permissions Policy
   Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=(), usb=()
-  
+
   # Content Security Policy
-  Content-Security-Policy: default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob: *.tile.openstreetmap.org *.qrserver.com; font-src 'self' https://fonts.gstatic.com data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://consent.cookiebot.com https://cdn.jsdelivr.net https://www.gstatic.com https://unpkg.com; connect-src 'self' https: wss: *.firebaseio.com *.googleapis.com https://api.emailjs.com https://nominatim.openstreetmap.org; upgrade-insecure-requests;
+  Content-Security-Policy: default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob: *.tile.openstreetmap.org *.qrserver.com; font-src 'self' https://fonts.gstatic.com data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.gstatic.com https://unpkg.com; connect-src 'self' https: wss: *.firebaseio.com *.googleapis.com https://api.emailjs.com https://nominatim.openstreetmap.org; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'; upgrade-insecure-requests;
+
+/*.html
+  X-Content-Type-Options: nosniff
