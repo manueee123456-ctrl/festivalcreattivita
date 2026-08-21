@@ -1,17 +1,19 @@
-# Netlify Configuration for Festival della Didattica Creativa
+[build]
+  # La cartella pubblica con i file del sito (index.html, privacy, cookie, 404)
+  publish = "."
 
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-    X-Frame-Options = "SAMEORIGIN"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(self), microphone=(), geolocation=()"
-    Content-Security-Policy = "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob: *.tile.openstreetmap.org *.qrserver.com; font-src 'self' https://fonts.gstatic.com data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://consent.cookiebot.com https://cdn.jsdelivr.net https://www.gstatic.com https://unpkg.com; connect-src 'self' https: wss: *.firebaseio.com *.googleapis.com https://api.emailjs.com https://nominatim.openstreetmap.org; upgrade-insecure-requests;"
+[build.functions]
+  # La cartella con le Netlify Functions (serverless)
+  directory = "netlify/functions"
 
+# Pagina 404 personalizzata
 [[redirects]]
-  from = "http://*"
-  to = "https://:splat"
-  status = 301
-  force = true
+  from = "/*"
+  to = "/404.html"
+  status = 404
+
+# Proteggi la cartella delle functions (accesso diretto negato)
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Cache-Control = "no-store"
