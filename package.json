@@ -4,8 +4,6 @@
   "description": "Festival della Didattica Creativa - sito web",
   "private": true,
   "type": "module",
-  "scripts": {
-    "build": "echo 'Static site - no build step required'"
-  },
+  "scripts": { "build": "echo 'Static site - no build step required'" },
   "dependencies": {}
 }
