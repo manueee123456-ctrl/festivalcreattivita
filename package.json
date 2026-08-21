@@ -1,8 +1,11 @@
 {
-  "name": "robot-ai-festival-chat",
+  "name": "festival-creattivita",
   "version": "1.0.0",
+  "description": "Festival della Didattica Creativa - sito web",
+  "private": true,
   "type": "module",
-  "dependencies": {
-    "@google/genai": "latest"
-  }
+  "scripts": {
+    "build": "echo 'Static site - no build step required'"
+  },
+  "dependencies": {}
 }
