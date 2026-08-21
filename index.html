@@ -85,7 +85,7 @@
 <!-- ===================== FINE SEO ===================== -->
 
 <!-- SECURITY HEADERS & POLICIES -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob: *.tile.openstreetmap.org *.qrserver.com; font-src 'self' https://fonts.gstatic.com data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.gstatic.com https://unpkg.com; connect-src 'self' https: wss: *.firebaseio.com *.googleapis.com https://api.emailjs.com https://nominatim.openstreetmap.org; upgrade-insecure-requests;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob: *.tile.openstreetmap.org *.qrserver.com; font-src 'self' https://fonts.gstatic.com data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.gstatic.com https://unpkg.com; connect-src 'self' https: wss: *.firebaseio.com *.googleapis.com https://api.emailjs.com https://nominatim.openstreetmap.org; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'; upgrade-insecure-requests;">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#a855f7">
@@ -566,8 +566,26 @@ footer strong { color:rgba(255,255,255,.8); }
 .otp-step { display:none; }
 .otp-step.active { display:block; }
 .otp-boxes { display:flex; gap:10px; justify-content:center; margin:20px 0; }
-.otp-box { width:48px; height:56px; border:2px solid #e5e7eb; border-radius:12px; text-align:center; font-family:'Nunito',sans-serif; font-size:1.5rem; font-weight:900; color:var(--text); outline:none; transition:border-color .2s; }
-.otp-box:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(168,85,247,.15); }
+.otp-box {
+  width:48px; height:56px; border:2px solid #e5e7eb; border-radius:12px; text-align:center;
+  font-family:'Nunito',sans-serif; font-size:1.5rem; font-weight:900; color:var(--text); outline:none;
+  background:#fff; transition:border-color .2s, box-shadow .2s, transform .15s;
+  animation: otpBoxIn .5s cubic-bezier(.34,1.56,.64,1) backwards;
+}
+.otp-box:focus {
+  border-color:var(--purple);
+  box-shadow:0 0 0 4px rgba(168,85,247,.18), 0 6px 20px rgba(168,85,247,.25);
+  transform:translateY(-2px) scale(1.05);
+  animation: otpWobble .4s ease;
+}
+.otp-box.filled { border-color:#7c3aed; background:linear-gradient(135deg,#f3e8ff,#fce7f3); box-shadow:0 4px 14px rgba(168,85,247,.2); }
+body.dark .otp-box { background:#1e1640; border-color:#3d2a6e; color:#e8e0ff; }
+body.dark .otp-box.filled { background:#2e1065; border-color:#c084fc; }
+
+@keyframes otpBoxIn { from { opacity:0; transform:translateY(18px) scale(.8); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes otpWobble { 0%,100%{transform:translateY(0)} 25%{transform:translateY(-3px) rotate(-2deg)} 50%{transform:translateY(1px) rotate(2deg)} 75%{transform:translateY(-1px)} }
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes pulseGlow { 0%,100%{box-shadow:0 0 10px rgba(168,85,247,.4)} 50%{box-shadow:0 0 28px rgba(168,85,247,.8)} }
 .otp-info { text-align:center; font-size:.82rem; color:#9ca3af; margin-bottom:6px; }
 .otp-email-display { text-align:center; font-size:.88rem; font-weight:700; color:var(--purple); margin-bottom:16px; }
 .otp-resend { text-align:center; }
@@ -1520,6 +1538,29 @@ body.dark .cookie-pref-row { border-color:#3d2a6e; }
         <div class="auth-sub">Accedi con il tuo account per gestire le prenotazioni.</div>
         <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="lEmail" type="email" placeholder="la-tua@email.com"></div>
         <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="lPass" type="password" placeholder="••••••••"></div>
+        <div style="text-align:right;margin:-6px 0 10px;">
+          <button onclick="showReset()" style="background:none;border:none;color:var(--purple);font-family:'Nunito',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;text-decoration:underline;">Password dimenticata?</button>
+        </div>
+
+        <!-- RESET PASSWORD (recupero con OTP via email) -->
+        <div id="resetForm" style="display:none;border-top:1px solid #f3e8ff;padding-top:14px;">
+          <div class="auth-sub" style="margin-bottom:12px;">Inserisci la tua email e ti invieremo un codice per reimpostare la password.</div>
+          <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="rEmail2" type="email" placeholder="la-tua@email.com"></div>
+          <div id="resetCodeBox" style="display:none;">
+            <div class="otp-boxes" style="margin:14px 0;">
+              <input class="otp-box" id="rOtp0" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
+              <input class="otp-box" id="rOtp1" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
+              <input class="otp-box" id="rOtp2" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
+              <input class="otp-box" id="rOtp3" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
+              <input class="otp-box" id="rOtp4" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
+              <input class="otp-box" id="rOtp5" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
+            </div>
+            <div class="form-group"><label class="form-label">Nuova password (min. 6 caratteri)</label><input class="form-input" id="rNewPass" type="password" placeholder="••••••••"></div>
+            <button class="btn-auth" style="width:100%;margin-top:6px;" onclick="confirmReset()">🔑 Reimposta password</button>
+          </div>
+          <button class="btn-auth" id="resetSendBtn" style="width:100%;margin-top:6px;" onclick="sendResetOtp()">📧 Invia codice</button>
+          <button onclick="showReset()" style="background:none;border:none;color:#9ca3af;font-family:'Nunito',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;margin-top:8px;width:100%;">← Torna al login</button>
+        </div>
       </div>
 
       <!-- REGISTER: step 1 dati -->
@@ -1555,7 +1596,7 @@ body.dark .cookie-pref-row { border-color:#3d2a6e; }
         <div id="regStep2" class="otp-step">
           <div class="auth-title">Il tuo codice di verifica 🔐</div>
           <div class="auth-sub">Inserisci questo codice per completare la registrazione:</div>
-          <div id="otpCodeDisplay" style="font-size:2.2rem;font-weight:900;letter-spacing:10px;color:var(--purple);background:linear-gradient(135deg,#f3e8ff,#fce7f3);border-radius:16px;padding:16px 24px;margin:16px 0;text-align:center;font-family:monospace;"></div>
+          <div id="otpCodeDisplay" style="font-size:2.2rem;font-weight:900;letter-spacing:10px;color:var(--purple);background:linear-gradient(135deg,#f3e8ff,#fce7f3);border-radius:16px;padding:16px 24px;margin:16px 0;text-align:center;font-family:monospace;animation:pulseGlow 2s ease infinite;"></div>
           <div class="otp-email-display" id="otpEmailDisplay" style="margin-bottom:12px;"></div>
           <div class="otp-boxes">
             <input class="otp-box" id="otp0" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
@@ -3763,8 +3804,10 @@ function setupOtpBoxes() {
   for (let i=0;i<6;i++) {
     const box = document.getElementById('otp'+i);
     box.value = '';
+    box.classList.remove('filled');
     box.addEventListener('input', function() {
       this.value = this.value.replace(/\D/,'');
+      this.classList.toggle('filled', this.value.length>0);
       if (this.value && i<5) document.getElementById('otp'+(i+1)).focus();
     });
     box.addEventListener('keydown', function(e) {
@@ -3775,7 +3818,7 @@ function setupOtpBoxes() {
       const text = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
       for (let j=0;j<text.length;j++) {
         const b = document.getElementById('otp'+j);
-        if (b) b.value = text[j];
+        if (b) { b.value = text[j]; b.classList.add('filled'); }
       }
       const last = document.getElementById('otp'+(Math.min(text.length,5)));
       if (last) last.focus();
@@ -3788,6 +3831,21 @@ function getOtpValue() {
 }
 
 async function sendOtpEmail(email, nome, code) {
+  // 1) Tenta di inviare via Brevo (Netlify Function) — funziona sul sito pubblicato
+  try {
+    const res = await fetch('/.netlify/functions/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to_email: email, to_name: nome, verification_code: code })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok) return data;
+    console.warn('Brevo non disponibile:', data.error || res.status);
+  } catch(err) {
+    console.warn('Brevo fetch error, fallback EmailJS:', err);
+  }
+
+  // 2) Fallback EmailJS (per test locale o se Brevo non configurato)
   try {
     const result = await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
       to_email:          email,
@@ -3799,7 +3857,6 @@ async function sendOtpEmail(email, nome, code) {
     return result;
   } catch(err) {
     console.error('EmailJS error:', JSON.stringify(err));
-    // Mostra errore dettagliato in console per debug
     throw err;
   }
 }
@@ -3816,6 +3873,67 @@ function resendOtp() {
 }
 
 /* ---- main auth handler ---- */
+// ==================== RESET PASSWORD (recupero con OTP) ====================
+let resetOtp = null;
+function showReset(){
+  const rf=document.getElementById('resetForm');
+  const lf=document.getElementById('loginForm');
+  if(rf.style.display==='block'){ rf.style.display='none'; lf.style.display='block'; }
+  else { lf.style.display='none'; rf.style.display='block'; document.getElementById('resetSendBtn').style.display='block'; document.getElementById('resetCodeBox').style.display='none'; }
+}
+function setupResetOtp(){
+  for(let i=0;i<6;i++){
+    const b=document.getElementById('rOtp'+i);
+    if(!b) continue;
+    b.addEventListener('input', function(){
+      this.value=this.value.replace(/\D/,'');
+      this.classList.toggle('filled',this.value.length>0);
+      if(this.value&&i<5) document.getElementById('rOtp'+(i+1)).focus();
+    });
+    b.addEventListener('keydown', function(e){
+      if(e.key==='Backspace'&&!this.value&&i>0) document.getElementById('rOtp'+(i-1)).focus();
+    });
+  }
+}
+async function sendResetOtp(){
+  const email=document.getElementById('rEmail2').value.trim().toLowerCase();
+  if(!email){ showAuthErr('Inserisci la tua email.'); return; }
+  // Controlla che l'utente esista (localStorage o Firebase)
+  let exists = users.find(u=>u.email===email);
+  if(!exists){
+    try{ const d=await db.collection('users').doc(email).get(); exists=d.exists; }catch(e){}
+  }
+  if(!exists){ showAuthErr('Nessun account trovato con questa email.'); return; }
+  resetOtp = generateOtp();
+  document.getElementById('resetSendBtn').textContent='⏳ Invio codice...';
+  const sent = await sendOtpEmail(email, (exists.nome||''), resetOtp).catch(()=>false);
+  document.getElementById('resetSendBtn').textContent='📧 Invia codice';
+  document.getElementById('resetSendBtn').style.display='none';
+  document.getElementById('resetCodeBox').style.display='block';
+  setupResetOtp();
+  if(document.getElementById('rOtp0')) document.getElementById('rOtp0').focus();
+  showToast(sent ? '📧 Codice inviato a '+email : '⚠️ Invio non riuscito');
+}
+async function confirmReset(){
+  const email=document.getElementById('rEmail2').value.trim().toLowerCase();
+  let otp='';
+  for(let i=0;i<6;i++) otp += (document.getElementById('rOtp'+i).value||'');
+  const np=document.getElementById('rNewPass').value;
+  if(otp.length<6){ showAuthErr('Inserisci tutte e 6 le cifre del codice.'); return; }
+  if(otp!==resetOtp){ showAuthErr('Codice non corretto. Riprova.'); return; }
+  if(!np||np.length<6){ showAuthErr('La nuova password deve avere almeno 6 caratteri.'); return; }
+  const hash=await hashPassword(np);
+  // aggiorna su localStorage e Firebase
+  const u=users.find(u=>u.email===email);
+  if(u){ u.passHash=hash; localStorage.setItem('fdc_users', JSON.stringify(users)); }
+  try{ await db.collection('users').doc(email).update({ passHash: hash }).catch(()=>{}); }catch(e){}
+  resetOtp=null;
+  showReset();
+  showToast('✅ Password aggiornata! Ora accedi.');
+  document.getElementById('lEmail').value=email;
+  document.getElementById('lPass').value='';
+}
+
 async function handleAuth() {
   clearAuthErr();
 
@@ -4009,7 +4127,7 @@ async function handleAuth() {
       return;
     }
 
-    // Mostra il codice direttamente a schermo — nessuna email inviata
+    // Mostra il codice di verifica direttamente a schermo (funzionante)
     document.getElementById('otpEmailDisplay').textContent = 'Registrazione per: ' + email;
     const codeEl = document.getElementById('otpCodeDisplay');
     if (codeEl) codeEl.textContent = pendingOtp;
@@ -4017,6 +4135,7 @@ async function handleAuth() {
     startOtpTimer();
     setupOtpBoxes();
     document.getElementById('otp0').focus();
+    showToast('🔐 Codice mostrato a schermo — inseriscilo per completare');
     return;
   }
 
@@ -7121,5 +7240,5 @@ function openCookiePrefs(){
 }
 </script>
 
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2ec401dae9d5276',t:'MTc4NzM0MjcwNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
