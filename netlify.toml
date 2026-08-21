@@ -1,18 +1,12 @@
 [build]
-  # La cartella pubblica con i file del sito (index.html, privacy, cookie, 404)
   publish = "."
+  functions = "netlify/functions"
 
-[build.functions]
-  # La cartella con le Netlify Functions (serverless)
-  directory = "netlify/functions"
-
-# Pagina 404 personalizzata
 [[redirects]]
   from = "/*"
   to = "/404.html"
   status = 404
 
-# Proteggi la cartella delle functions (accesso diretto negato)
 [[headers]]
   for = "/.netlify/functions/*"
   [headers.values]
