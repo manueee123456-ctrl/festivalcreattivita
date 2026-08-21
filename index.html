@@ -1541,26 +1541,27 @@ body.dark .cookie-pref-row { border-color:#3d2a6e; }
         <div style="text-align:right;margin:-6px 0 10px;">
           <button onclick="showReset()" style="background:none;border:none;color:var(--purple);font-family:'Nunito',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;text-decoration:underline;">Password dimenticata?</button>
         </div>
+      </div>
 
-        <!-- RESET PASSWORD (recupero con OTP via email) -->
-        <div id="resetForm" style="display:none;border-top:1px solid #f3e8ff;padding-top:14px;">
-          <div class="auth-sub" style="margin-bottom:12px;">Inserisci la tua email e ti invieremo un codice per reimpostare la password.</div>
-          <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="rEmail2" type="email" placeholder="la-tua@email.com"></div>
-          <div id="resetCodeBox" style="display:none;">
-            <div class="otp-boxes" style="margin:14px 0;">
-              <input class="otp-box" id="rOtp0" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
-              <input class="otp-box" id="rOtp1" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
-              <input class="otp-box" id="rOtp2" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
-              <input class="otp-box" id="rOtp3" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
-              <input class="otp-box" id="rOtp4" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
-              <input class="otp-box" id="rOtp5" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
-            </div>
-            <div class="form-group"><label class="form-label">Nuova password (min. 6 caratteri)</label><input class="form-input" id="rNewPass" type="password" placeholder="••••••••"></div>
-            <button class="btn-auth" style="width:100%;margin-top:6px;" onclick="confirmReset()">🔑 Reimposta password</button>
+      <!-- RESET PASSWORD (recupero con OTP via email) - fuori dal loginForm -->
+      <div id="resetForm" style="display:none;">
+        <div class="auth-title">Recupera password 🔑</div>
+        <div class="auth-sub" style="margin-bottom:12px;">Inserisci la tua email e ti invieremo un codice per reimpostare la password.</div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="rEmail2" type="email" placeholder="la-tua@email.com"></div>
+        <div id="resetCodeBox" style="display:none;">
+          <div class="otp-boxes" style="margin:14px 0;">
+            <input class="otp-box" id="rOtp0" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
+            <input class="otp-box" id="rOtp1" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
+            <input class="otp-box" id="rOtp2" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
+            <input class="otp-box" id="rOtp3" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
+            <input class="otp-box" id="rOtp4" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
+            <input class="otp-box" id="rOtp5" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]">
           </div>
-          <button class="btn-auth" id="resetSendBtn" style="width:100%;margin-top:6px;" onclick="sendResetOtp()">📧 Invia codice</button>
-          <button onclick="showReset()" style="background:none;border:none;color:#9ca3af;font-family:'Nunito',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;margin-top:8px;width:100%;">← Torna al login</button>
+          <div class="form-group"><label class="form-label">Nuova password (min. 6 caratteri)</label><input class="form-input" id="rNewPass" type="password" placeholder="••••••••"></div>
+          <button class="btn-auth" style="width:100%;margin-top:6px;" onclick="confirmReset()">🔑 Reimposta password</button>
         </div>
+        <button class="btn-auth" id="resetSendBtn" style="width:100%;margin-top:6px;" onclick="sendResetOtp()">📧 Invia codice</button>
+        <button onclick="showReset()" style="background:none;border:none;color:#9ca3af;font-family:'Nunito',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;margin-top:8px;width:100%;">← Torna al login</button>
       </div>
 
       <!-- REGISTER: step 1 dati -->
@@ -3878,8 +3879,24 @@ let resetOtp = null;
 function showReset(){
   const rf=document.getElementById('resetForm');
   const lf=document.getElementById('loginForm');
-  if(rf.style.display==='block'){ rf.style.display='none'; lf.style.display='block'; }
-  else { lf.style.display='none'; rf.style.display='block'; document.getElementById('resetSendBtn').style.display='block'; document.getElementById('resetCodeBox').style.display='none'; }
+  const reg=document.getElementById('registerForm');
+  const btn=document.getElementById('btnAuthAction');
+  if(rf && rf.style.display==='block'){
+    // torna al login
+    rf.style.display='none';
+    if(lf) lf.style.display='block';
+    if(reg) reg.style.display='none';
+    if(btn) btn.style.display='';
+  } else {
+    // mostra reset
+    if(lf) lf.style.display='none';
+    if(reg) reg.style.display='none';
+    if(rf) rf.style.display='block';
+    if(btn) btn.style.display='none';
+    const rsb=document.getElementById('resetSendBtn'); if(rsb) rsb.style.display='block';
+    const rcb=document.getElementById('resetCodeBox'); if(rcb) rcb.style.display='none';
+    clearAuthErr();
+  }
 }
 function setupResetOtp(){
   for(let i=0;i<6;i++){
@@ -4038,7 +4055,7 @@ async function handleAuth() {
       showAuthErr('Account non trovato. Registrati prima!');
       return;
     }
-    if (!user.verified) { showAuthErr('Email non verificata. Registrati di nuovo.'); return; }
+    if (user.verified === false) { showAuthErr('Email non verificata. Registrati di nuovo.'); return; }
     
     const userPassOk = await verifyPassword(pass, user.passHash);
     if (!userPassOk) {
@@ -7240,5 +7257,5 @@ function openCookiePrefs(){
 }
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2ec401dae9d5276',t:'MTc4NzM0MjcwNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2ec65a58ca4edc2',t:'MTc4NzM0NDI0MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
