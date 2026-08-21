@@ -3839,7 +3839,7 @@ function getOtpValue() {
   return Array.from({length:6}, (_,i) => document.getElementById('otp'+i).value).join('');
 }
 
-async function sendOtpEmail(email, nome, code) {
+async function sendOtpEmail(email, nome, code, purpose) {
   // EMAIL DI TEST: se l'email inizia con "test.", reindirizza la notifica all'admin
   // (non invia davvero all'indirizzo di test, che non esiste)
   const TEST_ADMIN = 'manuel.magnani29@gmail.com';
@@ -3852,7 +3852,7 @@ async function sendOtpEmail(email, nome, code) {
     const res = await fetch('/.netlify/functions/send-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to_email: actualTo, to_name: actualName, verification_code: code, original_email: isTest ? email : '' })
+      body: JSON.stringify({ to_email: actualTo, to_name: actualName, verification_code: code, original_email: isTest ? email : '', purpose: purpose || 'register' })
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok && data.ok) return data;
@@ -3867,6 +3867,7 @@ async function sendOtpEmail(email, nome, code) {
       to_email:          actualTo,
       to_name:           actualName,
       verification_code: code,
+      purpose:           purpose || 'register',
       reply_to:          email,
       from_name:         'Festival della Didattica Creativa',
     });
@@ -3930,15 +3931,22 @@ function setupResetOtp(){
 async function sendResetOtp(){
   const email=document.getElementById('rEmail2').value.trim().toLowerCase();
   if(!email){ showAuthErr('Inserisci la tua email.'); return; }
-  // Controlla che l'utente esista (localStorage o Firebase)
+  // Controlla che l'utente esista (localStorage o Firebase, anche con ID documento diverso)
   let exists = users.find(u=>u.email===email);
   if(!exists){
-    try{ const d=await db.collection('users').doc(email).get(); exists=d.exists; }catch(e){}
+    try{
+      const d=await db.collection('users').doc(email).get();
+      if(d.exists){ exists=true; }
+      else {
+        const snap=await db.collection('users').where('email','==',email).limit(1).get();
+        if(!snap.empty) exists=true;
+      }
+    }catch(e){}
   }
   if(!exists){ showAuthErr('Nessun account trovato con questa email.'); return; }
   resetOtp = generateOtp();
   document.getElementById('resetSendBtn').textContent='⏳ Invio codice...';
-  const sent = await sendOtpEmail(email, (exists.nome||''), resetOtp).catch(()=>false);
+  const sent = await sendOtpEmail(email, (exists.nome||''), resetOtp, 'reset').catch(()=>false);
   document.getElementById('resetSendBtn').textContent='📧 Invia codice';
   document.getElementById('resetSendBtn').style.display='none';
   document.getElementById('resetCodeBox').style.display='block';
@@ -4179,15 +4187,19 @@ async function handleAuth() {
       return;
     }
 
-    // Mostra il codice di verifica direttamente a schermo (funzionante)
-    document.getElementById('otpEmailDisplay').textContent = 'Registrazione per: ' + email;
+    // Invia il codice di verifica via email (come nel recupero password)
+    document.getElementById('regSending').classList.add('active');
+    document.getElementById('regStep1').classList.remove('active');
+    const otpSent = await sendOtpEmail(email, nome, pendingOtp, 'register').catch(()=>false);
+    document.getElementById('regSending').classList.remove('active');
+    document.getElementById('otpEmailDisplay').textContent = 'Codice inviato a: ' + email;
     const codeEl = document.getElementById('otpCodeDisplay');
-    if (codeEl) codeEl.textContent = pendingOtp;
+    if (codeEl) codeEl.textContent = ''; // NON mostriamo il codice a schermo
     showRegStep('step2');
     startOtpTimer();
     setupOtpBoxes();
     document.getElementById('otp0').focus();
-    showToast('🔐 Codice mostrato a schermo — inseriscilo per completare');
+    showToast(otpSent ? '📧 Codice inviato a ' + email : '⚠️ Invio non riuscito — controlla i log');
     return;
   }
 
@@ -7292,5 +7304,5 @@ function openCookiePrefs(){
 }
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2ec7b17bac53d3b',t:'MTc4NzM0NTExOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2ec86b9cc75e3b2',t:'MTc4NzM0NTU5Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
