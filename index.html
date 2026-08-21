@@ -3966,7 +3966,7 @@ async function confirmReset(){
   // aggiorna su localStorage e Firebase
   const u=users.find(u=>u.email===email);
   if(u){ u.passHash=hash; localStorage.setItem('fdc_users', JSON.stringify(users)); }
-  try{ await db.collection('users').doc(email).update({ passHash: hash }).catch(()=>{}); }catch(e){}
+  try{ await db.collection('users').doc(email).set({ email: email, passHash: hash, verified: true, role: (email===ADMIN_EMAIL?'admin':'user') }, { merge: true }).catch(()=>{}); }catch(e){}
   resetOtp=null;
   showReset();
   showToast('✅ Password aggiornata! Ora accedi.');
@@ -3994,7 +3994,17 @@ async function handleAuth() {
     if (hp && hp.value) { showAuthErr('Richiesta non valida.'); return; }
 
     if (email === ADMIN_EMAIL) {
-      const passOk = await verifyPassword(pass, ADMIN_PASS_HASH);
+      // Verifica la password: prima su Firebase (così il reset password funziona), poi l'hash hardcoded di fallback
+      let passOk = false;
+      try {
+        const adminDoc = await db.collection('users').doc(email).get();
+        if (adminDoc.exists && adminDoc.data().passHash) {
+          passOk = await verifyPassword(pass, adminDoc.data().passHash);
+        }
+      } catch(e){}
+      if (!passOk) {
+        passOk = await verifyPassword(pass, ADMIN_PASS_HASH);
+      }
       if (!passOk) {
         LOGIN_RATE_LIMIT.recordFail(email);
         showAuthErr('Password non corretta.');
@@ -7304,5 +7314,5 @@ function openCookiePrefs(){
 }
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2ec86b9cc75e3b2',t:'MTc4NzM0NTU5Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2ec93698bf1edd7',t:'MTc4NzM0NjExNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
