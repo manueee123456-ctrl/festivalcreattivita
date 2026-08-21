@@ -1,8 +1,7 @@
-// Netlify Function: invio email OTP via Brevo
-// La chiave API resta sul server (non visibile nel client).
+// Netlify Function (ESM): invio email OTP via Brevo
 // Endpoint: /.netlify/functions/send-otp
+// Nota: il progetto ha "type":"module" in package.json, quindi si usa `export const handler`.
 
-// In produzione meglio leggere la chiave da una variabile d'ambiente Netlify.
 const BREVO_API_KEY = process.env.BREVO_API_KEY
   || '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';
 
@@ -10,8 +9,7 @@ const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email';
 const FROM_EMAIL = 'manuel.magnani29@gmail.com';
 const FROM_NAME = 'Festival della Didattica Creativa';
 
-exports.handler = async (event, context) => {
-  // Solo POST
+export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
@@ -63,3 +61,4 @@ exports.handler = async (event, context) => {
     return { statusCode: 500, body: JSON.stringify({ error: String(e && e.message || e) }) };
   }
 };
+a
