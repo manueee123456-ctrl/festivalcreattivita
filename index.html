@@ -2879,9 +2879,10 @@ const db = firebase.firestore();
 
 // ==================== STATO GLOBALE ====================
 let MAX_PER_ACTIVITY = 15;
-function capFor(a){ return (a && a.max && a.max > 0) ? a.max : MAX_PER_ACTIVITY; }
+function capFor(a){ return (a && typeof a.max === 'number' && a.max > 0) ? a.max : MAX_PER_ACTIVITY; }
 let darkMode = localStorage.getItem('fdc_dark') === 'true';
 const onlineRef = db.collection('analytics').doc('online');
+
 // ========================== MUSIC & ANIMATION STATE ==========================
 const MUSIC_TRACKS = ['bgMusic0', 'bgMusic1', 'bgMusic2', 'bgMusic3'];
 let musicIdx = 0;
@@ -2928,9 +2929,9 @@ const activities = [
   // GIORNO 1 · MERCOLEDÌ 2 SETTEMBRE 2026 — Scuola Di Duccio, Miramare di Rimini
   {id:1,day:'1',time:'10:15 - 13:00',title:'Ultimate Frisbee',emoji:'🥏',cat:'Sport & Movimento',theme:'sport',max:25},
   {id:101,day:'1',time:'10:15 - 13:00',title:'Tag Rugby',emoji:'🏉',cat:'Sport & Movimento',theme:'sport',max:25},
-  {id:2,day:'1',time:'10:30 - 12:00',title:'Teatro, improvvisazione e giochi a occhi bendati',emoji:'🎭',cat:'Teatro & Espressione',theme:'teatro'},
-  {id:10,day:'1',time:'10:30 - 11:30',title:'Coding e IA',emoji:'💻',cat:'Tecnologia',theme:'mente'},
-  {id:3,day:'1',time:'12:30 - 13:30',title:'Caccia al tesoro botanica',emoji:'🌿',cat:'Natura & Scienza',theme:'natura'},
+  {id:2,day:'1',time:'10:30 - 12:00',title:'Teatro, improvvisazione e giochi a occhi bendati',emoji:'🎭',cat:'Teatro & Espressione',theme:'teatro',max:15},
+  {id:10,day:'1',time:'10:30 - 11:30',title:'Coding e IA',emoji:'💻',cat:'Tecnologia',theme:'mente',max:15},
+  {id:3,day:'1',time:'12:30 - 13:30',title:'Caccia al tesoro botanica',emoji:'🌿',cat:'Natura & Scienza',theme:'natura',max:15},
   {id:4,day:'1',time:'12:30 - 13:30',title:"Che cos'è la Psicologia?",emoji:'🧠',cat:'Socialità',theme:'mente',max:10},
   {id:5,day:'1',time:'15:00 - 16:00',title:'Make up nella storia',emoji:'💄',cat:'Arte & Stile',theme:'arte',max:10},
   {id:33,day:'1',time:'15:00 - 16:00',title:'Meccanica, Ripariamo!',emoji:'🔧',cat:'Manualità & Tecnica',theme:'mente',max:10},
@@ -2939,31 +2940,31 @@ const activities = [
   {id:8,day:'1',time:'16:00 - 17:00',title:'Fotografia (necessario smartphone)',emoji:'📷',cat:'Arte & Media',theme:'arte',max:8},
   {id:34,day:'1',time:'16:00 - 17:00',title:'Mosaico',emoji:'🎨',cat:'Arte & Artigianato',theme:'arte',max:10},
   {id:35,day:'1',time:'16:00 - 17:00',title:'Cuciniamo la piadina',emoji:'🥙',cat:'Cucina & Enogastronomia',theme:'cucina',max:12},
-  {id:9,day:'1',time:'17:00 - 18:30',title:'Costruzione strumenti e percussioni',emoji:'🥁',cat:'Musica & Manualità',theme:'arte'},
+  {id:9,day:'1',time:'17:00 - 18:30',title:'Costruzione strumenti e percussioni',emoji:'🥁',cat:'Musica & Manualità',theme:'arte',max:15},
   {id:11,day:'1',time:'14:30 - 18:30',title:'Laboratorio di Cinema (Sessione 1)',emoji:'🎬',cat:'Cinema & Media',theme:'teatro',phoneOnly:true,phoneNumber:'339 128 7178',max:12},
   // GIORNO 2 · GIOVEDÌ 3 SETTEMBRE 2026 — Scuola Di Duccio, Miramare di Rimini
   {id:12,day:'2',time:'09:30 - 12:00',title:'Ultimate Frisbee',emoji:'🥏',cat:'Sport & Movimento',theme:'sport',max:25},
   {id:102,day:'2',time:'09:30 - 12:00',title:'Tag Rugby',emoji:'🏉',cat:'Sport & Movimento',theme:'sport',max:25},
   {id:13,day:'2',time:'10:00 - 12:00',title:'Calcio bendati',emoji:'⚽',cat:'Sport & Inclusione',theme:'sport',max:12},
   {id:14,day:'2',time:'10:30 - 11:30',title:'Cuciniamo Pasta',emoji:'🍝',cat:'Cucina & Enogastronomia',theme:'cucina',max:12},
-  {id:15,day:'2',time:'10:30 - 11:30',title:'Ideogrammi Cinesi',emoji:'🀄',cat:'Lingue',theme:'lingue'},
-  {id:17,day:'2',time:'11:30 - 12:30',title:'Fumetti',emoji:'✏️',cat:'Arte & Illustrazione',theme:'arte'},
-  {id:18,day:'2',time:'12:30 - 13:30',title:'Creta',emoji:'🏺',cat:'Scultura & Manualità',theme:'arte'},
-  {id:19,day:'2',time:'15:00 - 16:20',title:'Arte, carta, mani, emozioni e fantasia',emoji:'🎨',cat:'Arte & Illustrazione',theme:'arte',note:"Laboratorio di sculture di carta con l'artista Fuad Aziz"},
-  {id:23,day:'2',time:'15:00 - 16:30',title:'Costruzione strumenti e percussioni',emoji:'🥁',cat:'Musica & Manualità',theme:'arte'},
+  {id:15,day:'2',time:'10:30 - 11:30',title:'Ideogrammi Cinesi',emoji:'🀄',cat:'Lingue',theme:'lingue',max:15},
+  {id:17,day:'2',time:'11:30 - 12:30',title:'Fumetti',emoji:'✏️',cat:'Arte & Illustrazione',theme:'arte',max:15},
+  {id:18,day:'2',time:'12:30 - 13:30',title:'Creta',emoji:'🏺',cat:'Scultura & Manualità',theme:'arte',max:15},
+  {id:19,day:'2',time:'15:00 - 16:20',title:'Arte, carta, mani, emozioni e fantasia',emoji:'🎨',cat:'Arte & Illustrazione',theme:'arte',max:15,note:"Laboratorio di sculture di carta con l'artista Fuad Aziz"},
+  {id:23,day:'2',time:'15:00 - 16:30',title:'Costruzione strumenti e percussioni',emoji:'🥁',cat:'Musica & Manualità',theme:'arte',max:15},
   {id:20,day:'2',time:'15:30 - 17:00',title:'Giochi di ruolo',emoji:'🎲',cat:'Ludo & Socialità',theme:'teatro',max:6},
   {id:21,day:'2',time:'15:30 - 16:30',title:'Candele e profumi',emoji:'🕯️',cat:'Artigianato & Sensi',theme:'arte',max:10},
   {id:22,day:'2',time:'16:30 - 18:00',title:'Ritmo e movimento, espressività e musica',emoji:'💃',cat:'Danza & Musica',theme:'teatro',max:20,note:'Con il coreografo Claudio Gasparotto del Movimento Centrale Danza e Teatro'},
   {id:24,day:'2',time:'09:30 - 13:30',title:'Laboratorio di Cinema (Sessione 2 - Mattina)',emoji:'🎬',cat:'Cinema & Media',theme:'teatro',phoneOnly:true,phoneNumber:'339 128 7178',max:12},
   {id:25,day:'2',time:'14:30 - 16:00',title:'Laboratorio di Cinema (Sessione 3 - Pomeriggio)',emoji:'🎬',cat:'Cinema & Media',theme:'teatro',phoneOnly:true,phoneNumber:'339 128 7178',max:12},
   // GIORNO 3 · VENERDÌ 4 SETTEMBRE 2026 — Parco Spina Verde, Casina CiViVo, Miramare di Rimini
-  {id:26,day:'3',time:'10:30 - 11:30',title:'Filosofia e debate: metti in gioco fatti e opinioni',emoji:'💭',cat:'Cultura & Debate',theme:'sociale',location:'Parco Spina Verde · Casina CiViVo'},
+  {id:26,day:'3',time:'10:30 - 11:30',title:'Filosofia e debate: metti in gioco fatti e opinioni',emoji:'💭',cat:'Cultura & Debate',theme:'sociale',max:15,location:'Parco Spina Verde · Casina CiViVo'},
   {id:27,day:'3',time:'11:30 - 12:45',title:"Alla ricerca degli animali: scopri l'ambiente che ci circonda",emoji:'🦋',cat:'Natura & Ambiente',theme:'natura',max:10,location:'Parco Spina Verde · Casina CiViVo'},
   {id:28,day:'3',time:'11:30 - 12:30',title:"Kokedama, impara l'arte del giardino alla giapponese",emoji:'🌱',cat:'Natura & Botanica',theme:'natura',max:10,location:'Parco Spina Verde · Casina CiViVo'},
-  {id:103,day:'3',time:'12:30 - 13:30',title:'Unboxing Antimafia e contro la violenza sulle donne: conosci le eroine e gli eroi del nostro mondo',emoji:'🕊️',cat:'Cultura & Socialità',theme:'sociale',location:'Parco Spina Verde · Casina CiViVo'},
-  {id:30,day:'3',time:'14:30 - 15:30',title:'Uncinetto',emoji:'🧶',cat:'Artigianato & Manualità',theme:'arte',location:'Parco Spina Verde · Casina CiViVo'},
-  {id:31,day:'3',time:'15:00 - 16:45',title:'Arte, carta, mani, emozioni e fantasia',emoji:'🎨',cat:'Arte & Illustrazione',theme:'arte',location:'Parco Spina Verde · Casina CiViVo',note:"Laboratorio di sculture di carta con l'artista Fuad Aziz"},
-  {id:32,day:'3',time:'16:45 - 18:30',title:'Ritmo, movimento, espressività e musica',emoji:'💃',cat:'Danza & Musica',theme:'teatro',location:'Parco Spina Verde · Casina CiViVo',note:'Con il coreografo Claudio Gasparotto del Movimento Centrale Danza e Teatro'},
+  {id:30,day:'3',time:'14:30 - 15:30',title:'Uncinetto',emoji:'🧶',cat:'Artigianato & Manualità',theme:'arte',max:15,location:'Parco Spina Verde · Casina CiViVo'},
+  {id:31,day:'3',time:'15:00 - 16:45',title:'Arte, carta, mani, emozioni e fantasia',emoji:'🎨',cat:'Arte & Illustrazione',theme:'arte',max:15,location:'Parco Spina Verde · Casina CiViVo',note:"Laboratorio di sculture di carta con l'artista Fuad Aziz"},
+  {id:32,day:'3',time:'15:30 - 16:30',title:'ESCAPE ROOM a tema:eroine ed eroi del nostro tempo',emoji:'🦸🏻‍♂️',cat:'Cultura & Socialità',theme:'sociale',max:15,location:'Parco Spina Verde · Casina CiViVo'},
+  {id:33,day:'3',time:'16:45 - 18:30',title:'Ritmo, movimento, espressività e musica',emoji:'💃',cat:'Danza & Musica',theme:'teatro',max:20,location:'Parco Spina Verde · Casina CiViVo',note:'Con il coreografo Claudio Gasparotto del Movimento Centrale Danza e Teatro'}
 ];
 
 const dayNames = {
@@ -2972,23 +2973,18 @@ const dayNames = {
 // Etichetta breve usata in pannelli admin/heatmap (giorno interno → data reale)
 const dayShort = { '1':'2 Set', '2':'3 Set', '3':'4 Set' };
 
-// ==================== IMPOSTAZIONI SITO SU FIRESTORE (condivise con tutti) ====================
-// Prima le modifiche admin (testi, date, limiti, attività) venivano salvate solo in
-// localStorage (visibili solo nel browser di chi le fa) o non salvate affatto.
-// Ora vengono scritte su Firestore in settings/site e settings/activities, così
-// TUTTI i visitatori le vedono, non solo l'admin che le ha modificate.
-const siteTexts = {}; // cache in memoria dei testi editabili (badge, bio, ecc.)
-// Alcuni campi (hero, chi-siamo) sono su elementi senza id univoco: li applichiamo via selettore CSS
+// ==================== IMPOSTAZIONI SITO SU FIRESTORE ====================
+const siteTexts = {}; 
 const TEXT_SELECTOR_MAP = {
-  'hero-titolo':            {selector:'.hero h1',            prop:'innerHTML'},
-  'hero-sub':               {selector:'.hero-sub',           prop:'textContent'},
-  'hero-desc':              {selector:'.hero-desc',          prop:'textContent'},
-  'hero-tag':               {selector:'.festival-tag',       prop:'textContent'},
-  'chisiamo-titolo':        {selector:'.chisiamo-title',     prop:'innerHTML'},
-  'chisiamo-sub':           {selector:'.chisiamo-sub',       prop:'textContent'},
-  'chisiamo-indirizzo':     {selector:'.chisiamo-card-text', prop:'innerHTML'},
-  'chisiamo-desc-festival': {selector:'.chisiamo-desc',      prop:'innerHTML'},
-  'custom-css':             {selector:null,                  prop:null}, // gestito a parte
+  'hero-titolo':           {selector:'.hero h1',            prop:'innerHTML'},
+  'hero-sub':              {selector:'.hero-sub',           prop:'textContent'},
+  'hero-desc':             {selector:'.hero-desc',          prop:'textContent'},
+  'hero-tag':              {selector:'.festival-tag',       prop:'textContent'},
+  'chisiamo-titolo':       {selector:'.chisiamo-title',     prop:'innerHTML'},
+  'chisiamo-sub':          {selector:'.chisiamo-sub',       prop:'textContent'},
+  'chisiamo-indirizzo':    {selector:'.chisiamo-card-text', prop:'innerHTML'},
+  'chisiamo-desc-festival':{selector:'.chisiamo-desc',      prop:'innerHTML'},
+  'custom-css':            {selector:null,                  prop:null},
 };
 
 async function saveSiteSettings(partial) {
@@ -3013,7 +3009,6 @@ async function saveActivitiesToFirestore() {
   }
 }
 
-// Mappa interna giorno -> data reale (il festival si tiene dal 2 al 4 settembre 2026)
 const DAY_DATE_FALLBACK = { '1':'2', '2':'3', '3':'4' };
 function dayDate(day) {
   const name = String(dayNames[day] || '');
@@ -3022,19 +3017,16 @@ function dayDate(day) {
 }
 
 function loadSiteSettings() {
-  // onSnapshot invece di get(): le modifiche admin arrivano in tempo reale a chiunque
-  // abbia già la pagina aperta, non solo a chi la ricarica.
   db.collection('settings').doc('site').onSnapshot(siteDoc => {
     if (!siteDoc.exists) return;
     const s = siteDoc.data();
     if (s.dayNames) {
-      // Previene che date errate da Firebase (es. "1 Settembre") sostituiscano quelle corrette
       const merged = { ...dayNames, ...s.dayNames };
       for (const k of ['1','2','3']) {
         const name = String(merged[k] || '');
         const m = name.match(/(\d+)\s*Settembre/i);
         if (!m || m[1] !== DAY_DATE_FALLBACK[k]) {
-          merged[k] = dayNames[k]; // ripristina il valore corretto dal default
+          merged[k] = dayNames[k];
         }
       }
       Object.assign(dayNames, merged);
@@ -3082,7 +3074,10 @@ function loadSiteSettings() {
     const list = actDoc.data().list;
     if (!Array.isArray(list) || !list.length) return;
     activities.length = 0;
-    list.forEach(a => activities.push(a));
+    list.forEach(a => {
+      activities.push(a);
+      if (counts[a.id] === undefined) counts[a.id] = 0; // Fix per prevenire NaN se si sincronizzano nuove attività
+    });
     renderActivities(currentFilter);
     if (typeof renderSportGrid === 'function') renderSportGrid();
     if (typeof refreshAdminActivities === 'function') refreshAdminActivities();
