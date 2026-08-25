@@ -108,26 +108,31 @@ export async function handler(event) {
     ];
     const summary = {};
 
-    for (const collectionPath of topLevel) {
-      const records = await listFirestoreCollection(collectionPath);
-      await callTurso({ action: 'documents:reconcile', collectionPath, records }, token);
-      summary[collectionPath] = records.length;
-    }
+    // Legge le raccolte in parallelo per restare entro il tempo massimo delle Netlify Functions.
+    const topResults = await Promise.all(topLevel.map(async collectionPath => ({
+      collectionPath,
+      records: await listFirestoreCollection(collectionPath)
+    })));
+    topResults.forEach(result => { summary[result.collectionPath] = result.records.length; });
 
     const activities = await callTurso({ action: 'activities:list' });
     const activityIds = [...new Set((activities.rows || []).map(row => Number(row.id)).filter(Number.isFinite))];
-    let chatMessages = 0;
-    for (const activityId of activityIds) {
+    const chatResults = await Promise.all(activityIds.map(async activityId => {
       const collectionPath = `chats/${activityId}/messages`;
-      const records = await listFirestoreCollection(collectionPath);
-      await callTurso({ action: 'documents:reconcile', collectionPath, records }, token);
-      chatMessages += records.length;
+      return { collectionPath, records: await listFirestoreCollection(collectionPath) };
+    }));
+    summary.chatMessages = chatResults.reduce((total, result) => total + result.records.length, 0);
+
+    const allRecords = [...topResults, ...chatResults].flatMap(result => result.records);
+    // Un numero ridotto di transazioni atomiche è molto più rapido di una richiesta per raccolta.
+    for (let index = 0; index < allRecords.length; index += 400) {
+      await callTurso({ action: 'documents:upsertMany', records: allRecords.slice(index, index + 400) }, token);
     }
-    summary.chatMessages = chatMessages;
 
     return reply(200, {
       ok: true,
       message: 'Migrazione completata. Firebase non è stato cancellato.',
+      totalDocuments: allRecords.length,
       summary
     });
   } catch (error) {
