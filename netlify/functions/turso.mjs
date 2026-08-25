@@ -134,7 +134,7 @@ function ensureSchema() {
           data_json TEXT NOT NULL,
           updated_at INTEGER NOT NULL,
           deleted INTEGER NOT NULL DEFAULT 0,
-          source TEXT NOT NULL DEFAULT 'firebase',
+          source TEXT NOT NULL DEFAULT 'turso',
           PRIMARY KEY (collection_path, doc_id)
         )`
       },
@@ -149,6 +149,15 @@ function ensureSchema() {
           actor_email TEXT,
           created_at INTEGER NOT NULL
         )`
+      },
+      {
+        sql: `CREATE TABLE IF NOT EXISTS password_reset_codes (
+          email TEXT PRIMARY KEY,
+          code_hash TEXT NOT NULL,
+          expires_at INTEGER NOT NULL,
+          requested_at INTEGER NOT NULL,
+          attempts INTEGER NOT NULL DEFAULT 0
+        )`
       }
     ]).catch(error => {
       schemaPromise = null;
@@ -156,6 +165,175 @@ function ensureSchema() {
     });
   }
   return schemaPromise;
+}
+
+async function getAppDocument(collectionPath, docId, includeDeleted = false) {
+  collectionPath = normalizePath(collectionPath);
+  docId = normalizeDocId(docId);
+  const rows = await tursoQuery(
+    `SELECT doc_id, data_json, updated_at, deleted
+     FROM app_documents
+     WHERE collection_path=? AND doc_id=? ${includeDeleted ? '' : 'AND deleted=0'}
+     LIMIT 1`,
+    [collectionPath, docId]
+  );
+  if (!rows.length) return null;
+  let data = {};
+  try { data = JSON.parse(rows[0].data_json || '{}'); } catch {}
+  return { docId: rows[0].doc_id, data, updatedAt: rows[0].updated_at, deleted: !!rows[0].deleted };
+}
+
+async function listAppDocuments(collectionPath) {
+  collectionPath = normalizePath(collectionPath);
+  const rows = await tursoQuery(
+    `SELECT doc_id, data_json, updated_at
+     FROM app_documents
+     WHERE collection_path=? AND deleted=0`,
+    [collectionPath]
+  );
+  return rows.map(row => {
+    let data = {};
+    try { data = JSON.parse(row.data_json || '{}'); } catch {}
+    return { docId: row.doc_id, data, updatedAt: row.updated_at };
+  });
+}
+
+async function findUserRecord(email) {
+  email = String(email || '').trim().toLowerCase();
+  const direct = await getAppDocument('users', email);
+  if (direct) return direct;
+  const records = await listAppDocuments('users');
+  return records.find(record => String(record.data?.email || '').toLowerCase() === email) || null;
+}
+
+function fieldValue(data, path) {
+  return String(path || '').split('.').reduce((value, key) => value == null ? undefined : value[key], data);
+}
+
+function comparableValue(value) {
+  if (value && typeof value === 'object' && value.__type && value.value) return value.value;
+  return value;
+}
+
+function applyQuery(records, filters = [], orderBy = [], rowLimit = 0) {
+  let result = records.slice();
+  for (const filter of filters || []) {
+    if (filter.op !== '==') throw new Error('Operatore query non supportato');
+    result = result.filter(record => comparableValue(fieldValue(record.data, filter.field)) === comparableValue(filter.value));
+  }
+  if (orderBy && orderBy.length) {
+    result.sort((a, b) => {
+      for (const order of orderBy) {
+        const av = comparableValue(fieldValue(a.data, order.field));
+        const bv = comparableValue(fieldValue(b.data, order.field));
+        if (av === bv) continue;
+        const direction = String(order.direction || 'asc').toLowerCase() === 'desc' ? -1 : 1;
+        if (av == null) return 1 * direction;
+        if (bv == null) return -1 * direction;
+        return (av < bv ? -1 : 1) * direction;
+      }
+      return a.docId.localeCompare(b.docId);
+    });
+  }
+  const limit = Math.max(0, Math.min(1000, Number(rowLimit) || 0));
+  return limit ? result.slice(0, limit) : result;
+}
+
+const DELETE_VALUE = Symbol('delete-value');
+
+function resolveWriteValue(value, existingValue) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    if (value.__op === 'serverTimestamp') {
+      return { __type: 'timestamp', value: new Date().toISOString() };
+    }
+    if (value.__op === 'increment') {
+      return (Number(existingValue) || 0) + (Number(value.value) || 0);
+    }
+    if (value.__op === 'delete') return DELETE_VALUE;
+    const out = {};
+    for (const [key, child] of Object.entries(value)) {
+      out[key] = resolveWriteValue(child, existingValue && typeof existingValue === 'object' ? existingValue[key] : undefined);
+    }
+    return out;
+  }
+  if (Array.isArray(value)) return value.map(item => resolveWriteValue(item, undefined)).filter(item => item !== DELETE_VALUE);
+  return value === undefined ? null : value;
+}
+
+function deepMerge(existing, patch) {
+  const out = existing && typeof existing === 'object' && !Array.isArray(existing) ? { ...existing } : {};
+  for (const [key, value] of Object.entries(patch || {})) {
+    if (value === DELETE_VALUE) delete out[key];
+    else if (value && typeof value === 'object' && !Array.isArray(value) && !value.__type) out[key] = deepMerge(out[key], value);
+    else out[key] = value;
+  }
+  return out;
+}
+
+function stripDeleted(value) {
+  if (value === DELETE_VALUE) return undefined;
+  if (Array.isArray(value)) return value.map(stripDeleted).filter(item => item !== undefined);
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [key, child] of Object.entries(value)) {
+      const clean = stripDeleted(child);
+      if (clean !== undefined) out[key] = clean;
+    }
+    return out;
+  }
+  return value;
+}
+
+function buildStoredData(input, existing, merge) {
+  const resolved = resolveWriteValue(input || {}, existing || {});
+  return merge ? deepMerge(existing || {}, resolved) : stripDeleted(resolved);
+}
+
+function primaryEmail(data) {
+  return String(data?.userEmail || data?.email || '').trim().toLowerCase();
+}
+
+function canReadCollection(session, path) {
+  if (['settings', 'counts', 'annunci', 'hype'].includes(path)) return true;
+  if (/^chats\/[^/]+\/messages$/.test(path)) return true;
+  if (!session) return false;
+  if (session.role === 'admin') return true;
+  if (path === 'bookings' || path === 'waitlist' || path === 'users') return true;
+  if (path === 'staffradio') return ['admin', 'controller', 'helper'].includes(session.role);
+  if (['admins', 'controllers', 'helpers', 'analytics'].includes(path)) return false;
+  return false;
+}
+
+function filterReadableRecords(session, path, records) {
+  if (!session || session.role === 'admin') return records;
+  if (path === 'bookings' && ['controller', 'helper'].includes(session.role)) return records;
+  if (path === 'bookings' || path === 'waitlist' || path === 'users') {
+    const email = String(session.email || '').toLowerCase();
+    return records.filter(record => primaryEmail(record.data) === email || record.docId.toLowerCase() === email);
+  }
+  return records;
+}
+
+function sanitizeRecordForClient(path, record, session) {
+  if (!record) return null;
+  const data = { ...(record.data || {}) };
+  if (session?.role !== 'admin' && ['users', 'admins', 'controllers', 'helpers'].includes(path)) {
+    delete data.passHash;
+    delete data.rawPass;
+  }
+  return { ...record, data };
+}
+
+function canWriteDocument(session, path, docId, data) {
+  if (!session) return false;
+  if (session.role === 'admin') return true;
+  const email = String(session.email || '').toLowerCase();
+  if (path === 'users') return docId.toLowerCase() === email;
+  if (path === 'waitlist') return docId.toLowerCase().includes(email) || primaryEmail(data) === email;
+  if (/^chats\/[^/]+\/messages$/.test(path)) return String(data?.email || '').toLowerCase() === email;
+  if (path === 'hype' || path === 'analytics') return true;
+  if (path === 'staffradio') return ['admin', 'controller', 'helper'].includes(session.role) && String(data?.email || email).toLowerCase() === email;
+  return false;
 }
 
 function sha256(value) {
@@ -183,62 +361,6 @@ function passwordMatches(password, storedHash) {
     if (candidate.length !== String(storedHash).length) return false;
     return crypto.timingSafeEqual(Buffer.from(candidate), Buffer.from(String(storedHash)));
   });
-}
-
-function decodeFirestoreValue(value) {
-  if (!value || typeof value !== 'object') return null;
-  if ('nullValue' in value) return null;
-  if ('stringValue' in value) return value.stringValue;
-  if ('booleanValue' in value) return value.booleanValue;
-  if ('integerValue' in value) return Number(value.integerValue);
-  if ('doubleValue' in value) return Number(value.doubleValue);
-  if ('timestampValue' in value) return value.timestampValue;
-  if ('bytesValue' in value) return value.bytesValue;
-  if ('referenceValue' in value) return value.referenceValue;
-  if ('geoPointValue' in value) return value.geoPointValue;
-  if ('arrayValue' in value) return (value.arrayValue.values || []).map(decodeFirestoreValue);
-  if ('mapValue' in value) return decodeFirestoreFields(value.mapValue.fields || {});
-  return null;
-}
-
-function decodeFirestoreFields(fields) {
-  const out = {};
-  for (const [key, value] of Object.entries(fields || {})) out[key] = decodeFirestoreValue(value);
-  return out;
-}
-
-async function getFirestoreDocument(collection, documentId) {
-  const project = env('FIREBASE_PROJECT_ID', 'festivaldiduccio');
-  const apiKey = env('FIREBASE_WEB_API_KEY');
-  const keyPart = apiKey ? '?key=' + encodeURIComponent(apiKey) : '';
-  const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(project)}/databases/(default)/documents/${encodeURIComponent(collection)}/${encodeURIComponent(documentId)}${keyPart}`;
-  const res = await fetch(url);
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error('Errore lettura profilo Firebase');
-  const doc = await res.json();
-  return decodeFirestoreFields(doc.fields || {});
-}
-
-async function findFirestoreUserByEmail(email) {
-  const project = env('FIREBASE_PROJECT_ID', 'festivaldiduccio');
-  const apiKey = env('FIREBASE_WEB_API_KEY');
-  const keyPart = apiKey ? '?key=' + encodeURIComponent(apiKey) : '';
-  const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(project)}/databases/(default)/documents:runQuery${keyPart}`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      structuredQuery: {
-        from: [{ collectionId: 'users' }],
-        where: { fieldFilter: { field: { fieldPath: 'email' }, op: 'EQUAL', value: { stringValue: email } } },
-        limit: 1
-      }
-    })
-  });
-  if (!res.ok) return null;
-  const rows = await res.json();
-  const doc = rows.find(row => row.document)?.document;
-  return doc ? decodeFirestoreFields(doc.fields || {}) : null;
 }
 
 function base64url(input) {
@@ -278,12 +400,13 @@ async function createSession(email, password) {
   password = String(password || '');
   if (!email || !password) throw new Error('Email e password obbligatorie');
 
+  await ensureSchema();
   const candidates = [];
   const mainAdminEmail = env('ADMIN_EMAIL', 'manuel.magnani29@gmail.com').toLowerCase();
-  let profile = await getFirestoreDocument('users', email).catch(() => null);
-  if (!profile) profile = await findFirestoreUserByEmail(email).catch(() => null);
+  const profileRecord = await findUserRecord(email).catch(() => null);
+  const profile = profileRecord?.data || null;
 
-  // Per l'admin principale accetta prima la password aggiornata su Firebase,
+  // Per l'admin principale accetta prima la password aggiornata su Turso,
   // poi l'hash di emergenza configurato nelle variabili Netlify.
   if (email === mainAdminEmail) {
     if (profile?.passHash) candidates.push({ hash: profile.passHash, role: 'admin' });
@@ -291,10 +414,10 @@ async function createSession(email, password) {
   } else {
     // Mantiene lo stesso ordine del login nel sito: ruoli staff prima dell'utente normale.
     for (const [collection, candidateRole] of [['admins', 'admin'], ['controllers', 'controller'], ['helpers', 'helper']]) {
-      const roleDoc = await getFirestoreDocument(collection, email).catch(() => null);
-      if (roleDoc?.passHash) candidates.push({ hash: roleDoc.passHash, role: candidateRole });
+      const roleRecord = await getAppDocument(collection, email).catch(() => null);
+      if (roleRecord?.data?.passHash) candidates.push({ hash: roleRecord.data.passHash, role: candidateRole });
     }
-    if (profile?.passHash) candidates.push({ hash: profile.passHash, role: profile.role || 'user' });
+    if (profile?.passHash && profile.verified !== false) candidates.push({ hash: profile.passHash, role: profile.role || 'user' });
   }
 
   const matched = candidates.find(candidate => passwordMatches(password, candidate.hash));
@@ -342,7 +465,8 @@ function normalizeMirrorRecord(record) {
     data,
     dataJson,
     deleted: record?.deleted ? 1 : 0,
-    updatedAt: Number(record?.updatedAt) || Date.now()
+    updatedAt: Number(record?.updatedAt) || Date.now(),
+    source: String(record?.source || 'turso').slice(0, 30)
   };
 }
 
@@ -350,13 +474,13 @@ function mirrorUpsertStatement(record) {
   return {
     sql: `INSERT INTO app_documents
           (collection_path, doc_id, data_json, updated_at, deleted, source)
-          VALUES (?, ?, ?, ?, ?, 'firebase')
+          VALUES (?, ?, ?, ?, ?, ?)
           ON CONFLICT(collection_path, doc_id) DO UPDATE SET
             data_json=excluded.data_json,
             updated_at=excluded.updated_at,
             deleted=excluded.deleted,
             source=excluded.source`,
-    args: [record.collectionPath, record.docId, record.dataJson, record.updatedAt, record.deleted]
+    args: [record.collectionPath, record.docId, record.dataJson, record.updatedAt, record.deleted, record.source]
   };
 }
 
@@ -386,6 +510,108 @@ async function reconcileMirrorCollection(collectionPath, records) {
 async function deleteMirrorRecord(collectionPath, docId, previousData = {}) {
   const record = normalizeMirrorRecord({ collectionPath, docId, data: previousData, deleted: true });
   await tursoAtomic([mirrorUpsertStatement(record)]);
+}
+
+async function setAppDocument(collectionPath, docId, inputData, merge = false, source = 'turso') {
+  const existingRecord = await getAppDocument(collectionPath, docId, true);
+  const existingData = existingRecord && !existingRecord.deleted ? existingRecord.data : {};
+  const data = buildStoredData(inputData, existingData, !!merge);
+  const record = normalizeMirrorRecord({ collectionPath, docId, data, deleted: false, source, updatedAt: Date.now() });
+  await tursoAtomic([mirrorUpsertStatement(record)]);
+  return { docId: record.docId, data };
+}
+
+async function updateAppDocument(collectionPath, docId, patchData, source = 'turso') {
+  const existing = await getAppDocument(collectionPath, docId);
+  if (!existing) throw new Error('Documento non trovato');
+  return setAppDocument(collectionPath, docId, patchData, true, source);
+}
+
+function validateRegistration(data, email) {
+  email = String(email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw new Error('Email non valida');
+  if (String(data?.email || '').toLowerCase() !== email) throw new Error('Email non coerente');
+  if (!/^[a-f0-9]{64}$/i.test(String(data?.passHash || '')) && !String(data?.passHash || '').startsWith('h_')) {
+    throw new Error('Hash password non valido');
+  }
+  return {
+    ...data,
+    email,
+    nome: String(data.nome || '').slice(0, 100),
+    cognome: String(data.cognome || '').slice(0, 100),
+    role: 'user',
+    verified: data.verified !== false
+  };
+}
+
+async function registerUser(email, data) {
+  email = String(email || '').trim().toLowerCase();
+  const existing = await findUserRecord(email);
+  if (existing) throw new Error('Account già esistente');
+  const clean = validateRegistration(data, email);
+  return setAppDocument('users', email, clean, false, 'registration');
+}
+
+async function resetUserPassword(email, passHash) {
+  email = String(email || '').trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/i.test(String(passHash || '')) && !String(passHash || '').startsWith('h_')) {
+    throw new Error('Hash password non valido');
+  }
+  const existing = await findUserRecord(email);
+  if (!existing) throw new Error('Account non trovato');
+  return setAppDocument('users', existing.docId, { passHash, verified: true }, true, 'password-reset');
+}
+
+function resetCodeHash(email, code) {
+  return sha256(String(email).toLowerCase() + ':' + String(code) + ':' + env('APP_SESSION_SECRET'));
+}
+
+async function startPasswordReset(email) {
+  email = String(email || '').trim().toLowerCase();
+  const user = await findUserRecord(email);
+  if (!user) return; // Risposta neutra per non facilitare l'enumerazione degli account.
+  const previous = await tursoQuery('SELECT requested_at FROM password_reset_codes WHERE email=?', [email]);
+  if (previous.length && Date.now() - Number(previous[0].requested_at) < 60_000) throw new Error('Attendi un minuto prima di richiedere un nuovo codice');
+  const code = String(crypto.randomInt(100000, 1000000));
+  const now = Date.now();
+  await tursoExecute(
+    `INSERT INTO password_reset_codes(email,code_hash,expires_at,requested_at,attempts)
+     VALUES(?,?,?,?,0)
+     ON CONFLICT(email) DO UPDATE SET code_hash=excluded.code_hash,
+       expires_at=excluded.expires_at,requested_at=excluded.requested_at,attempts=0`,
+    [email, resetCodeHash(email, code), now + 10 * 60_000, now]
+  );
+  const siteUrl = env('URL', env('DEPLOY_PRIME_URL')).replace(/\/$/, '');
+  if (!siteUrl) throw new Error('URL Netlify non disponibile');
+  const mailRes = await fetch(siteUrl + '/.netlify/functions/send-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      to_email: email,
+      to_name: user.data.nome || '',
+      verification_code: code,
+      purpose: 'reset'
+    })
+  });
+  const mailData = await mailRes.json().catch(() => ({}));
+  if (!mailRes.ok || mailData.ok === false) throw new Error('Invio del codice non riuscito');
+}
+
+async function confirmPasswordReset(email, code, passHash) {
+  email = String(email || '').trim().toLowerCase();
+  code = String(code || '').trim();
+  const rows = await tursoQuery('SELECT code_hash,expires_at,attempts FROM password_reset_codes WHERE email=?', [email]);
+  if (!rows.length || Number(rows[0].expires_at) < Date.now() || Number(rows[0].attempts) >= 5) {
+    throw new Error('Codice non valido o scaduto');
+  }
+  const expected = String(rows[0].code_hash);
+  const actual = resetCodeHash(email, code);
+  if (expected.length !== actual.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(actual))) {
+    await tursoExecute('UPDATE password_reset_codes SET attempts=attempts+1 WHERE email=?', [email]);
+    throw new Error('Codice non valido o scaduto');
+  }
+  await resetUserPassword(email, passHash);
+  await tursoExecute('DELETE FROM password_reset_codes WHERE email=?', [email]);
 }
 
 function validateActivities(input) {
@@ -437,6 +663,100 @@ async function replaceActivities(input, actorEmail) {
   return activities.length;
 }
 
+async function createBooking(session, bookingData, capacity, requestedDocId) {
+  if (!session) throw new Error('Accesso richiesto');
+  const email = String(session.email || '').toLowerCase();
+  if (session.role !== 'admin' && String(bookingData?.userEmail || '').toLowerCase() !== email) {
+    throw new Error('Prenotazione non autorizzata');
+  }
+  const activityId = Number(bookingData?.id);
+  const num = Math.max(1, Math.min(3, Number(bookingData?.num) || 1));
+  capacity = Math.max(1, Math.min(10000, Number(capacity) || Number(bookingData?.max) || 15));
+  if (!Number.isFinite(activityId)) throw new Error('Attività non valida');
+  const docId = normalizeDocId(requestedDocId || crypto.randomUUID());
+  const cleanData = buildStoredData({ ...bookingData, id: activityId, num, userEmail: email }, {}, false);
+  const bookingRecord = normalizeMirrorRecord({ collectionPath: 'bookings', docId, data: cleanData, source: 'turso' });
+  const countId = String(activityId);
+  const now = Date.now();
+  const emptyCount = JSON.stringify({ total: 0 });
+
+  await tursoAtomic([
+    {
+      sql: `INSERT INTO app_documents(collection_path,doc_id,data_json,updated_at,deleted,source)
+            VALUES('counts',?,?,?,0,'turso')
+            ON CONFLICT(collection_path,doc_id) DO UPDATE SET
+              data_json=CASE WHEN app_documents.deleted=1 THEN excluded.data_json ELSE app_documents.data_json END,
+              deleted=0,
+              updated_at=CASE WHEN app_documents.deleted=1 THEN excluded.updated_at ELSE app_documents.updated_at END`,
+      args: [countId, emptyCount, now]
+    },
+    {
+      sql: `INSERT INTO app_documents(collection_path,doc_id,data_json,updated_at,deleted,source)
+            SELECT 'bookings',?,?,?,?, 'turso'
+            WHERE COALESCE((SELECT CAST(json_extract(data_json,'$.total') AS INTEGER)
+                            FROM app_documents WHERE collection_path='counts' AND doc_id=? AND deleted=0),0) + ? <= ?
+              AND NOT EXISTS (
+                SELECT 1 FROM app_documents
+                WHERE collection_path='bookings' AND deleted=0
+                  AND CAST(json_extract(data_json,'$.id') AS INTEGER)=?
+                  AND lower(json_extract(data_json,'$.userEmail'))=lower(?)
+              )`,
+      args: [docId, bookingRecord.dataJson, now, 0, countId, num, capacity, activityId, email]
+    },
+    {
+      sql: `UPDATE app_documents
+            SET data_json=json_set(data_json,'$.total',
+                  COALESCE(CAST(json_extract(data_json,'$.total') AS INTEGER),0)+?),
+                updated_at=?, source='turso'
+            WHERE collection_path='counts' AND doc_id=? AND deleted=0 AND changes()>0`,
+      args: [num, now, countId]
+    }
+  ]);
+
+  const created = await getAppDocument('bookings', docId);
+  if (!created) {
+    const duplicate = applyQuery(await listAppDocuments('bookings'), [
+      { field: 'id', op: '==', value: activityId },
+      { field: 'userEmail', op: '==', value: email }
+    ], [], 1);
+    if (duplicate.length) throw new Error('prenotazione_duplicata');
+    throw new Error('posti_esauriti');
+  }
+  const count = await getAppDocument('counts', countId);
+  return { docId, booking: created.data, total: Number(count?.data?.total) || 0 };
+}
+
+async function deleteBooking(session, docId) {
+  if (!session) throw new Error('Accesso richiesto');
+  docId = normalizeDocId(docId);
+  const booking = await getAppDocument('bookings', docId);
+  if (!booking) throw new Error('Prenotazione non trovata');
+  const owner = String(booking.data.userEmail || '').toLowerCase();
+  if (session.role !== 'admin' && owner !== String(session.email || '').toLowerCase()) {
+    throw new Error('Cancellazione non autorizzata');
+  }
+  const activityId = String(booking.data.id);
+  const num = Math.max(1, Number(booking.data.num) || 1);
+  const now = Date.now();
+  await tursoAtomic([
+    {
+      sql: `UPDATE app_documents SET deleted=1,updated_at=?,source='turso'
+            WHERE collection_path='bookings' AND doc_id=? AND deleted=0`,
+      args: [now, docId]
+    },
+    {
+      sql: `UPDATE app_documents
+            SET data_json=json_set(data_json,'$.total',MAX(0,
+                  COALESCE(CAST(json_extract(data_json,'$.total') AS INTEGER),0)-?)),
+                updated_at=?,source='turso'
+            WHERE collection_path='counts' AND doc_id=? AND deleted=0 AND changes()>0`,
+      args: [num, now, activityId]
+    }
+  ]);
+  const count = await getAppDocument('counts', activityId);
+  return { docId, activityId: Number(activityId), total: Number(count?.data?.total) || 0 };
+}
+
 async function handleAction(body, event) {
   const action = String(body?.action || 'health');
   const session = verifySession(bearerToken(event.headers));
@@ -459,6 +779,127 @@ async function handleAction(body, event) {
     if (!session || session.role !== 'admin') return { __status: 403, ok: false, error: 'Accesso admin richiesto' };
     const count = await replaceActivities(body.activities, session.email);
     return { ok: true, count };
+  }
+
+  if (action === 'users:exists') {
+    const email = String(body.email || '').trim().toLowerCase();
+    const record = await findUserRecord(email);
+    return { ok: true, exists: !!record };
+  }
+
+  if (action === 'users:register') {
+    const result = await registerUser(body.email, body.data || {});
+    return { ok: true, docId: result.docId };
+  }
+
+  if (action === 'passwordReset:start') {
+    await startPasswordReset(body.email);
+    return { ok: true };
+  }
+
+  if (action === 'passwordReset:confirm') {
+    try {
+      await confirmPasswordReset(body.email, body.code, body.passHash);
+      return { ok: true };
+    } catch (error) {
+      return { __status: 400, ok: false, error: error.message };
+    }
+  }
+
+  if (action === 'bookings:create') {
+    try {
+      const result = await createBooking(session, body.bookingData || {}, body.capacity, body.docId);
+      return { ok: true, ...result };
+    } catch (error) {
+      if (['posti_esauriti', 'prenotazione_duplicata'].includes(error.message)) {
+        return { __status: 409, ok: false, error: error.message };
+      }
+      throw error;
+    }
+  }
+
+  if (action === 'bookings:delete') {
+    try {
+      const result = await deleteBooking(session, body.docId);
+      return { ok: true, ...result };
+    } catch (error) {
+      if (/non trovata|non autorizzata/.test(error.message)) return { __status: 403, ok: false, error: error.message };
+      throw error;
+    }
+  }
+
+  if (action === 'documents:get') {
+    const path = normalizePath(body.collectionPath);
+    const docId = normalizeDocId(body.docId);
+    if (!canReadCollection(session, path)) return { __status: 403, ok: false, error: 'Lettura non autorizzata' };
+    const record = await getAppDocument(path, docId);
+    const readable = record ? filterReadableRecords(session, path, [record]) : [];
+    return { ok: true, record: sanitizeRecordForClient(path, readable[0] || null, session) };
+  }
+
+  if (action === 'documents:query') {
+    const path = normalizePath(body.collectionPath);
+    if (!canReadCollection(session, path)) return { __status: 403, ok: false, error: 'Lettura non autorizzata' };
+    let records = await listAppDocuments(path);
+    records = filterReadableRecords(session, path, records);
+    records = applyQuery(records, body.filters || [], body.orderBy || [], body.limit || 0);
+    return { ok: true, records: records.map(record => sanitizeRecordForClient(path, record, session)) };
+  }
+
+  if (action === 'documents:set') {
+    const path = normalizePath(body.collectionPath);
+    const docId = normalizeDocId(body.docId);
+    const input = body.data && typeof body.data === 'object' ? body.data : {};
+    if (!session) return { __status: 403, ok: false, error: 'Accesso richiesto' };
+    const existing = await getAppDocument(path, docId, true);
+    const authData = body.merge && existing?.data ? deepMerge(existing.data, input) : input;
+    if (!canWriteDocument(session, path, docId, authData)) return { __status: 403, ok: false, error: 'Scrittura non autorizzata' };
+    const result = await setAppDocument(path, docId, input, !!body.merge, 'turso');
+    return { ok: true, record: result };
+  }
+
+  if (action === 'documents:update') {
+    const path = normalizePath(body.collectionPath);
+    const docId = normalizeDocId(body.docId);
+    const input = body.data && typeof body.data === 'object' ? body.data : {};
+    const existing = await getAppDocument(path, docId);
+    if (!existing || !canWriteDocument(session, path, docId, deepMerge(existing.data, input))) {
+      return { __status: 403, ok: false, error: 'Aggiornamento non autorizzato' };
+    }
+    const result = await updateAppDocument(path, docId, input, 'turso');
+    return { ok: true, record: result };
+  }
+
+  if (action === 'documents:remove') {
+    const path = normalizePath(body.collectionPath);
+    const docId = normalizeDocId(body.docId);
+    const existing = await getAppDocument(path, docId);
+    if (!existing || !canWriteDocument(session, path, docId, existing.data)) {
+      return { __status: 403, ok: false, error: 'Cancellazione non autorizzata' };
+    }
+    await deleteMirrorRecord(path, docId, existing.data);
+    return { ok: true };
+  }
+
+  if (action === 'documents:batch') {
+    if (!session || session.role !== 'admin') return { __status: 403, ok: false, error: 'Accesso admin richiesto' };
+    const operations = Array.isArray(body.operations) ? body.operations.slice(0, 600) : [];
+    const statements = [];
+    for (const operation of operations) {
+      const path = normalizePath(operation.collectionPath);
+      const docId = normalizeDocId(operation.docId);
+      const existing = await getAppDocument(path, docId, true);
+      if (operation.type === 'delete') {
+        const record = normalizeMirrorRecord({ collectionPath: path, docId, data: existing?.data || {}, deleted: true, source: 'turso' });
+        statements.push(mirrorUpsertStatement(record));
+      } else {
+        const data = buildStoredData(operation.data || {}, existing?.data || {}, operation.type === 'update' || !!operation.merge);
+        const record = normalizeMirrorRecord({ collectionPath: path, docId, data, deleted: false, source: 'turso' });
+        statements.push(mirrorUpsertStatement(record));
+      }
+    }
+    if (statements.length) await tursoAtomic(statements);
+    return { ok: true, count: statements.length };
   }
 
   if (action === 'documents:upsertMany') {
