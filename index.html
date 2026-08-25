@@ -2877,6 +2877,117 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// ==================== TURSO DATABASE ====================
+const TURSO_URL = 'https://festivalcreattivita-festivalutente.aws-eu-west-1.turso.io';
+const TURSO_TOKEN = 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODc2NTExMzcsImlkIjoiMDFhMDM4NGQtNzAwMS03ZjYxLTk5OTYtYTc0ODg2YTM5NThiIiwia2lkIjoiblNZNlU2MXk2QTRfaVhOSC1TVjYtWlBQSmVQYnR4cmw5SFZRZlBDa00xQSIsInJpZCI6ImQ2MzAyMDBkLTUyMzYtNDQ1Yy1iNjFlLTk2MTMwMzIxNTY3YiJ9.HDkC3sj4X78Bo01SssKc2G3l11wIXkkWV_j70AaTdMTlsDofqqQe5aLDwu5rB2fA6nh_-LJs2vuxMzi6OhkYDA';
+
+async function tursoQuery(sql, args) {
+  try {
+    const res = await fetch(TURSO_URL + '/v2/pipeline', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + TURSO_TOKEN,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ requests: [{ type: 'execute', stmt: { sql, args: args || [] } }] })
+    });
+    const data = await res.json();
+    if (data.results && data.results[0] && data.results[0].response && data.results[0].response.result) {
+      const result = data.results[0].response.result;
+      const cols = result.cols || [];
+      const rows = result.rows || [];
+      return rows.map(row => {
+        const obj = {};
+        row.forEach((cell, i) => {
+          obj[cols[i] ? cols[i].name : i] = cell.value;
+        });
+        return obj;
+      });
+    }
+    return [];
+  } catch (e) {
+    console.error('Turso query error:', e);
+    return [];
+  }
+}
+
+async function tursoExecute(sql, args) {
+  try {
+    const res = await fetch(TURSO_URL + '/v2/pipeline', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + TURSO_TOKEN,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ requests: [{ type: 'execute', stmt: { sql, args: args || [] } }] })
+    });
+    return await res.json();
+  } catch (e) {
+    console.error('Turso execute error:', e);
+    return null;
+  }
+}
+
+async function loadActivitiesFromTurso() {
+  try {
+    const rows = await tursoQuery('SELECT * FROM activities ORDER BY day, time');
+    if (!rows || rows.length === 0) {
+      console.log('Turso: nessuna attività trovata, uso dati locali');
+      return false;
+    }
+    activities.length = 0;
+    rows.forEach(r => {
+      let dayVal = String(r.day || '');
+      if (dayVal.startsWith('day')) dayVal = dayVal.replace('day', '');
+      activities.push({
+        id: r.id,
+        day: dayVal,
+        time: r.time || '',
+        title: r.title || '',
+        emoji: r.emoji || '',
+        cat: r.cat || '',
+        theme: r.theme || 'mente',
+        max: r.max || 15,
+        location: r.location || undefined,
+        note: r.note || undefined,
+        phoneOnly: r.phoneOnly === 1 ? true : undefined,
+        phoneNumber: r.phoneNumber || undefined
+      });
+      if (counts[r.id] === undefined) counts[r.id] = 0;
+    });
+    console.log('Turso: caricate ' + activities.length + ' attività');
+    const escapeRoom = activities.find(a => a.id === 32);
+    if (escapeRoom) {
+      escapeRoom.time = '15:30 - 16:30';
+      escapeRoom.location = 'Scuola Secondaria Di Duccio, Miramare';
+    }
+    renderActivities(currentFilter);
+    if (typeof renderSportGrid === 'function') renderSportGrid();
+    if (typeof refreshAdminActivities === 'function') refreshAdminActivities();
+    return true;
+  } catch (e) {
+    console.error('Errore caricamento attività da Turso:', e);
+    return false;
+  }
+}
+
+async function saveActivitiesToTurso() {
+  try {
+    await tursoExecute('DELETE FROM activities');
+    for (const a of activities) {
+      await tursoExecute(
+        'INSERT INTO activities (id, day, time, title, emoji, cat, theme, max, location, note, phoneOnly, phoneNumber) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [a.id, a.day, a.time || '', a.title, a.emoji || '', a.cat || '', a.theme || 'mente', a.max || 15, a.location || null, a.note || null, a.phoneOnly ? 1 : 0, a.phoneNumber || null]
+      );
+    }
+    console.log('Turso: salvate ' + activities.length + ' attività');
+    return true;
+  } catch (e) {
+    console.error('Errore salvataggio attività su Turso:', e);
+    return false;
+  }
+}
+
 // ==================== STATO GLOBALE ====================
 let MAX_PER_ACTIVITY = 15;
 function capFor(a){ return (a && typeof a.max === 'number' && a.max > 0) ? a.max : MAX_PER_ACTIVITY; }
@@ -2963,7 +3074,7 @@ const activities = [
   {id:28,day:'3',time:'11:30 - 12:30',title:"Kokedama, impara l'arte del giardino alla giapponese",emoji:'🌱',cat:'Natura & Botanica',theme:'natura',max:10,location:'Parco Spina Verde · Casina CiViVo'},
   {id:30,day:'3',time:'14:30 - 15:30',title:'Uncinetto',emoji:'🧶',cat:'Artigianato & Manualità',theme:'arte',max:15,location:'Parco Spina Verde · Casina CiViVo'},
   {id:31,day:'3',time:'15:00 - 16:45',title:'Arte, carta, mani, emozioni e fantasia',emoji:'🎨',cat:'Arte & Illustrazione',theme:'arte',max:15,location:'Parco Spina Verde · Casina CiViVo',note:"Laboratorio di sculture di carta con l'artista Fuad Aziz"},
-  {id:32,day:'3',time:'15:30 - 16:30',title:'ESCAPE ROOM a tema:eroine ed eroi del nostro tempo',emoji:'🦸🏻‍♂️',cat:'Cultura & Socialità',theme:'sociale',max:15,location:'Parco Spina Verde · Casina CiViVo'},
+  {id:32,day:'3',time:'15:30 - 16:30',title:'ESCAPE ROOM a tema:eroine ed eroi del nostro tempo',emoji:'🦸🏻‍♂️',cat:'Cultura & Socialità',theme:'sociale',max:15,location:'Scuola Secondaria Di Duccio, Miramare'},
   {id:33,day:'3',time:'16:45 - 18:30',title:'Ritmo, movimento, espressività e musica',emoji:'💃',cat:'Danza & Musica',theme:'teatro',max:20,location:'Parco Spina Verde · Casina CiViVo',note:'Con il coreografo Claudio Gasparotto del Movimento Centrale Danza e Teatro'}
 ];
 
@@ -3001,6 +3112,7 @@ async function saveSiteSettings(partial) {
 async function saveActivitiesToFirestore() {
   try {
     await db.collection('settings').doc('activities').set({ list: activities }, {merge:false});
+    saveActivitiesToTurso().catch(e => console.error('Turso sync error:', e));
     return true;
   } catch(e) {
     console.error('Errore salvataggio attività:', e);
@@ -3078,9 +3190,12 @@ function loadSiteSettings() {
       activities.push(a);
       if (counts[a.id] === undefined) counts[a.id] = 0; // Fix per prevenire NaN se si sincronizzano nuove attività
     });
-    // Fix: assicura che l'Escape Room (id:32) abbia sempre l'orario corretto
+    // Fix: assicura che l'Escape Room (id:32) abbia sempre orario e luogo corretti
     const escapeRoom = activities.find(a => a.id === 32);
-    if (escapeRoom) escapeRoom.time = '15:30 - 16:30';
+    if (escapeRoom) {
+      escapeRoom.time = '15:30 - 16:30';
+      escapeRoom.location = 'Scuola Secondaria Di Duccio, Miramare';
+    }
     renderActivities(currentFilter);
     if (typeof renderSportGrid === 'function') renderSportGrid();
     if (typeof refreshAdminActivities === 'function') refreshAdminActivities();
@@ -5427,6 +5542,11 @@ loadIntroData();
 renderSportGrid();
 loadPrenotaTexts();
 initSettingsToggles();
+// Carica attività da Turso (sovrascrive i dati locali con quelli dal database)
+loadActivitiesFromTurso().then(ok => {
+  if (ok) console.log('✅ Attività caricate da Turso');
+  else console.log('ℹ️ Uso attività locali (Turso non disponibile)');
+});
 // Re-render sport grid dopo che Firebase ha caricato i dati
 setTimeout(() => { loadIntroData(); renderSportGrid(); }, 1500);
 
@@ -7317,5 +7437,5 @@ function openCookiePrefs(){
 }
 </script>
 
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a309e5e8abf25183',t:'MTc4NzY1MzU4Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
