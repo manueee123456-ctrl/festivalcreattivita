@@ -3078,6 +3078,9 @@ function loadSiteSettings() {
       activities.push(a);
       if (counts[a.id] === undefined) counts[a.id] = 0; // Fix per prevenire NaN se si sincronizzano nuove attività
     });
+    // Fix: assicura che l'Escape Room (id:32) abbia sempre l'orario corretto
+    const escapeRoom = activities.find(a => a.id === 32);
+    if (escapeRoom) escapeRoom.time = '15:30 - 16:30';
     renderActivities(currentFilter);
     if (typeof renderSportGrid === 'function') renderSportGrid();
     if (typeof refreshAdminActivities === 'function') refreshAdminActivities();
