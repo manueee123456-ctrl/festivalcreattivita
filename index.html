@@ -2877,7 +2877,10 @@ const DB_FIELD_VALUE = {
   delete: () => ({ __op: 'delete' })
 };
 
-const TURSO_POLL_MS = 5000;
+// Aggiornamenti leggeri: le richieste sono raggruppate nel tempo per non
+// interrogare Netlify/Turso continuamente quando non serve.
+const TURSO_POLL_MS = 30000;
+const TURSO_DOCUMENT_POLL_MS = 120000;
 
 function reviveTursoValue(value) {
   if (Array.isArray(value)) return value.map(reviveTursoValue);
@@ -2967,6 +2970,10 @@ class TursoQuery {
     let running = false;
     const poll = async () => {
       if (!active || running) return;
+      if (document.hidden) {
+        timer = setTimeout(poll, TURSO_POLL_MS);
+        return;
+      }
       running = true;
       try {
         const snapshot = await this.get();
@@ -3055,6 +3062,10 @@ class TursoDocumentReference {
     let running = false;
     const poll = async () => {
       if (!active || running) return;
+      if (document.hidden) {
+        timer = setTimeout(poll, TURSO_DOCUMENT_POLL_MS);
+        return;
+      }
       running = true;
       try {
         const snapshot = await this.get();
@@ -3067,7 +3078,7 @@ class TursoDocumentReference {
         if (onError) onError(error);
       } finally {
         running = false;
-        if (active) timer = setTimeout(poll, TURSO_POLL_MS);
+        if (active) timer = setTimeout(poll, TURSO_DOCUMENT_POLL_MS);
       }
     };
     poll();
@@ -5670,8 +5681,8 @@ loadActivitiesFromTurso().then(ok => {
 // Aggiornamento periodico per gli altri utenti; non interrompe le modifiche nel pannello admin.
 setInterval(() => {
   const adminOpen = document.getElementById('adminOverlay')?.classList.contains('open');
-  if (!adminOpen) loadActivitiesFromTurso();
-}, 15000);
+  if (!document.hidden && !adminOpen) loadActivitiesFromTurso();
+}, 60000);
 // Re-render sport grid dopo il caricamento dei dati Turso
 setTimeout(() => { loadIntroData(); renderSportGrid(); }, 1500);
 
@@ -7239,9 +7250,10 @@ async function sendWT() {
   } catch(e) { showToast('❌ Errore invio'); }
 }
 
-// Start listening in background if staff
+// Mostra il pulsante allo staff; i messaggi vengono caricati solo quando
+// il pannello radio viene realmente aperto.
 setTimeout(function() {
-  if (isStaff()) { updateWTFab(); listenWT(); }
+  if (isStaff()) updateWTFab();
 }, 2000);
 
 // ================================================================
@@ -7572,5 +7584,5 @@ function openCookiePrefs(){
 }
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a30a6702199dee8c',t:'MTc4NzY1ODg3MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a30a7302cf38524c',t:'MTc4NzY1OTM2MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
