@@ -2963,6 +2963,7 @@ class TursoQuery {
     let active = true;
     let timer = null;
     let previous = new Map();
+    let initialized = false;
     let running = false;
     const poll = async () => {
       if (!active || running) return;
@@ -2980,7 +2981,12 @@ class TursoQuery {
           if (!current.has(id)) changes.push({ type: 'removed', doc });
         });
         previous = current;
-        onNext(new TursoQuerySnapshot(snapshot.docs, changes));
+        // Non ridisegnare la pagina a ogni polling: notifica solo al primo
+        // caricamento o quando i dati sono realmente cambiati.
+        if (!initialized || changes.length > 0) {
+          initialized = true;
+          onNext(new TursoQuerySnapshot(snapshot.docs, changes));
+        }
       } catch (error) {
         if (onError) onError(error);
       } finally {
@@ -3100,6 +3106,7 @@ const db = new TursoDatabase();
 // ==================== TURSO DATABASE (via Netlify Function) ====================
 const TURSO_API = '/.netlify/functions/turso';
 const TURSO_SESSION_KEY = 'fdc_turso_session';
+let lastActivitiesSignature = '';
 
 function getTursoSessionToken() {
   return localStorage.getItem(TURSO_SESSION_KEY) || '';
@@ -3147,6 +3154,9 @@ async function loadActivitiesFromTurso() {
     const rows = data.rows || [];
     if (!rows.length) return false;
     sharedActivitiesLoaded = true;
+    const activitySignature = JSON.stringify(rows);
+    if (activitySignature === lastActivitiesSignature) return true;
+    lastActivitiesSignature = activitySignature;
     activities.length = 0;
     rows.forEach(r => {
       const activityId = Number(r.id);
@@ -7562,5 +7572,5 @@ function openCookiePrefs(){
 }
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a30a24a5ec95ed9f',t:'MTc4NzY1NjE1MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a30a6702199dee8c',t:'MTc4NzY1ODg3MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
