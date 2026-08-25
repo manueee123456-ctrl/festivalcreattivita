@@ -86,7 +86,7 @@
 <!-- ===================== FINE SEO ===================== -->
 
 <!-- SECURITY HEADERS & POLICIES -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob: *.tile.openstreetmap.org *.qrserver.com; font-src 'self' https://fonts.gstatic.com data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.gstatic.com https://unpkg.com; connect-src 'self' https: wss: *.firebaseio.com *.googleapis.com https://api.emailjs.com https://nominatim.openstreetmap.org; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob: *.tile.openstreetmap.org *.qrserver.com; font-src 'self' https://fonts.gstatic.com data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; connect-src 'self' https: wss: *.googleapis.com https://api.emailjs.com https://nominatim.openstreetmap.org; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#a855f7">
@@ -101,8 +101,6 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Pacifico&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" crossorigin="anonymous"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" crossorigin="anonymous"></script>
@@ -2591,8 +2589,6 @@ body.dark .cookie-pref-row { border-color:#3d2a6e; }
   </div>
 </div>
 
-<div class="confetti-container" id="confettiContainer"></div>
-
 <!-- CHI SIAMO -->
 </div><!-- /page-programma -->
 
@@ -2872,32 +2868,238 @@ body.dark .cookie-pref-row { border-color:#3d2a6e; }
 </div><!-- /page-annunci -->
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-// ==================== FIREBASE ====================
-const firebaseConfig = {
-  apiKey: "AIzaSyB0VXhHNT4OJJA89gwwlMgUyDjIAI5Yj3c",
-  authDomain: "festivaldiduccio.firebaseapp.com",
-  projectId: "festivaldiduccio",
-  storageBucket: "festivaldiduccio.firebasestorage.app",
-  messagingSenderId: "547679339860",
-  appId: "1:547679339860:web:1d4d62890ae879581434c1",
-  measurementId: "G-GSYJKXRRLE"
+// ==================== TURSO DATA ADAPTER ====================
+// Compatibilità con l'API usata dal sito: tutti i dati persistenti passano
+// dalla Netlify Function e vengono salvati esclusivamente su Turso.
+const DB_FIELD_VALUE = {
+  serverTimestamp: () => ({ __op: 'serverTimestamp' }),
+  increment: value => ({ __op: 'increment', value: Number(value) || 0 }),
+  delete: () => ({ __op: 'delete' })
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+
+const TURSO_POLL_MS = 5000;
+
+function reviveTursoValue(value) {
+  if (Array.isArray(value)) return value.map(reviveTursoValue);
+  if (value && typeof value === 'object') {
+    if ((value.__type === 'timestamp' || value.__type === 'date') && value.value) {
+      const iso = value.value;
+      const date = new Date(iso);
+      return {
+        seconds: Math.floor(date.getTime() / 1000),
+        nanoseconds: 0,
+        toDate: () => new Date(iso),
+        toJSON: () => ({ __type: value.__type, value: iso })
+      };
+    }
+    const out = {};
+    Object.keys(value).forEach(key => { out[key] = reviveTursoValue(value[key]); });
+    return out;
+  }
+  return value;
+}
+
+function newTursoDocumentId() {
+  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') return globalThis.crypto.randomUUID();
+  return 'doc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 12);
+}
+
+async function tursoDataApi(action, payload, requireAuth = false) {
+  const hasSession = !!getTursoSessionToken();
+  return tursoApi(action, payload || {}, requireAuth || hasSession);
+}
+
+class TursoDocumentSnapshot {
+  constructor(ref, rawData, exists = true) {
+    this.ref = ref;
+    this.id = ref.id;
+    this.exists = !!exists;
+    this._rawData = rawData || {};
+  }
+  data() { return this.exists ? reviveTursoValue(this._rawData) : undefined; }
+}
+
+class TursoQuerySnapshot {
+  constructor(docs, changes) {
+    this.docs = docs;
+    this.size = docs.length;
+    this.empty = docs.length === 0;
+    this._changes = changes || docs.map(doc => ({ type: 'added', doc }));
+  }
+  forEach(callback) { this.docs.forEach(callback); }
+  docChanges() { return this._changes.slice(); }
+}
+
+class TursoQuery {
+  constructor(collectionPath, filters = [], ordering = [], rowLimit = 0) {
+    this.collectionPath = collectionPath;
+    this.filters = filters;
+    this.ordering = ordering;
+    this.rowLimit = rowLimit;
+  }
+  where(field, op, value) {
+    return new TursoQuery(this.collectionPath, [...this.filters, { field, op, value }], this.ordering, this.rowLimit);
+  }
+  orderBy(field, direction = 'asc') {
+    return new TursoQuery(this.collectionPath, this.filters, [...this.ordering, { field, direction }], this.rowLimit);
+  }
+  limit(value) {
+    return new TursoQuery(this.collectionPath, this.filters, this.ordering, Math.max(0, Number(value) || 0));
+  }
+  async get() {
+    const result = await tursoDataApi('documents:query', {
+      collectionPath: this.collectionPath,
+      filters: this.filters,
+      orderBy: this.ordering,
+      limit: this.rowLimit
+    });
+    const docs = (result.records || []).map(record => {
+      const ref = new TursoDocumentReference(this.collectionPath, record.docId);
+      return new TursoDocumentSnapshot(ref, record.data, true);
+    });
+    return new TursoQuerySnapshot(docs);
+  }
+  onSnapshot(onNext, onError) {
+    let active = true;
+    let timer = null;
+    let previous = new Map();
+    let running = false;
+    const poll = async () => {
+      if (!active || running) return;
+      running = true;
+      try {
+        const snapshot = await this.get();
+        const current = new Map(snapshot.docs.map(doc => [doc.id, doc]));
+        const changes = [];
+        current.forEach((doc, id) => {
+          const before = previous.get(id);
+          if (!before) changes.push({ type: 'added', doc });
+          else if (JSON.stringify(before._rawData) !== JSON.stringify(doc._rawData)) changes.push({ type: 'modified', doc });
+        });
+        previous.forEach((doc, id) => {
+          if (!current.has(id)) changes.push({ type: 'removed', doc });
+        });
+        previous = current;
+        onNext(new TursoQuerySnapshot(snapshot.docs, changes));
+      } catch (error) {
+        if (onError) onError(error);
+      } finally {
+        running = false;
+        if (active) timer = setTimeout(poll, TURSO_POLL_MS);
+      }
+    };
+    poll();
+    return () => { active = false; if (timer) clearTimeout(timer); };
+  }
+}
+
+class TursoCollectionReference extends TursoQuery {
+  constructor(collectionPath) { super(collectionPath); }
+  doc(docId) { return new TursoDocumentReference(this.collectionPath, docId || newTursoDocumentId()); }
+  async add(data) {
+    const ref = this.doc();
+    await ref.set(data);
+    return ref;
+  }
+}
+
+class TursoDocumentReference {
+  constructor(collectionPath, docId) {
+    this.collectionPath = String(collectionPath).replace(/^\/+|\/+$/g, '');
+    this.id = String(docId);
+    this.path = this.collectionPath + '/' + this.id;
+  }
+  collection(name) { return new TursoCollectionReference(this.path + '/' + String(name)); }
+  async get() {
+    const result = await tursoDataApi('documents:get', { collectionPath: this.collectionPath, docId: this.id });
+    return result.record
+      ? new TursoDocumentSnapshot(this, result.record.data, true)
+      : new TursoDocumentSnapshot(this, {}, false);
+  }
+  async set(data, options = {}) {
+    if (!getTursoSessionToken() && this.collectionPath === 'users') {
+      if (options && options.merge) throw new Error('Aggiornamento utente non autenticato');
+      await tursoApi('users:register', { email: this.id, data }, false);
+      return;
+    }
+    await tursoDataApi('documents:set', {
+      collectionPath: this.collectionPath,
+      docId: this.id,
+      data,
+      merge: !!(options && options.merge)
+    }, true);
+  }
+  async update(data) {
+    await tursoDataApi('documents:update', {
+      collectionPath: this.collectionPath,
+      docId: this.id,
+      data
+    }, true);
+  }
+  async delete() {
+    await tursoDataApi('documents:remove', {
+      collectionPath: this.collectionPath,
+      docId: this.id
+    }, true);
+  }
+  onSnapshot(onNext, onError) {
+    let active = true;
+    let timer = null;
+    let previousHash = null;
+    let running = false;
+    const poll = async () => {
+      if (!active || running) return;
+      running = true;
+      try {
+        const snapshot = await this.get();
+        const hash = snapshot.exists ? JSON.stringify(snapshot._rawData) : '__missing__';
+        if (hash !== previousHash) {
+          previousHash = hash;
+          onNext(snapshot);
+        }
+      } catch (error) {
+        if (onError) onError(error);
+      } finally {
+        running = false;
+        if (active) timer = setTimeout(poll, TURSO_POLL_MS);
+      }
+    };
+    poll();
+    return () => { active = false; if (timer) clearTimeout(timer); };
+  }
+}
+
+class TursoWriteBatch {
+  constructor() { this.operations = []; }
+  set(ref, data, options = {}) {
+    this.operations.push({ type: 'set', collectionPath: ref.collectionPath, docId: ref.id, data, merge: !!options.merge });
+    return this;
+  }
+  update(ref, data) {
+    this.operations.push({ type: 'update', collectionPath: ref.collectionPath, docId: ref.id, data, merge: true });
+    return this;
+  }
+  delete(ref) {
+    this.operations.push({ type: 'delete', collectionPath: ref.collectionPath, docId: ref.id });
+    return this;
+  }
+  async commit() {
+    if (!this.operations.length) return;
+    await tursoDataApi('documents:batch', { operations: this.operations }, true);
+  }
+}
+
+class TursoDatabase {
+  collection(name) { return new TursoCollectionReference(String(name)); }
+  batch() { return new TursoWriteBatch(); }
+  async runTransaction() { throw new Error('Usare le transazioni atomiche della Netlify Function Turso'); }
+}
+
+const db = new TursoDatabase();
 
 // ==================== TURSO DATABASE (via Netlify Function) ====================
-// Il token Turso resta sul server: non deve mai essere inserito nell'HTML pubblico.
 const TURSO_API = '/.netlify/functions/turso';
 const TURSO_SESSION_KEY = 'fdc_turso_session';
-let tursoMirrorUnsubs = [];
-let tursoMirrorOwner = '';
-let tursoWriteQueue = Promise.resolve();
-
-function queueTursoWrite(task) {
-  const run = tursoWriteQueue.then(task, task);
-  tursoWriteQueue = run.catch(() => {});
-  return run;
-}
 
 function getTursoSessionToken() {
   return localStorage.getItem(TURSO_SESSION_KEY) || '';
@@ -2905,16 +3107,13 @@ function getTursoSessionToken() {
 
 function clearTursoSession() {
   localStorage.removeItem(TURSO_SESSION_KEY);
-  tursoMirrorUnsubs.forEach(unsub => { try { unsub(); } catch(e) {} });
-  tursoMirrorUnsubs = [];
-  tursoMirrorOwner = '';
 }
 
 async function tursoApi(action, payload, authenticated) {
   const headers = { 'Content-Type': 'application/json' };
   if (authenticated) {
     const token = getTursoSessionToken();
-    if (!token) throw new Error('Sessione Turso non disponibile: esci e accedi di nuovo');
+    if (!token) throw new Error('Sessione scaduta: esci e accedi di nuovo');
     headers.Authorization = 'Bearer ' + token;
   }
   const res = await fetch(TURSO_API, {
@@ -2925,7 +3124,7 @@ async function tursoApi(action, payload, authenticated) {
   let data = null;
   try { data = await res.json(); } catch(e) {}
   if (!res.ok || !data || data.ok === false) {
-    if (authenticated && (res.status === 401 || res.status === 403)) clearTursoSession();
+    if (authenticated && res.status === 401) clearTursoSession();
     throw new Error((data && data.error) || ('Errore API Turso (' + res.status + ')'));
   }
   return data;
@@ -2935,140 +3134,10 @@ async function establishTursoSession(email, password) {
   try {
     const data = await tursoApi('session', { email, password }, false);
     localStorage.setItem(TURSO_SESSION_KEY, data.token);
-    setTimeout(() => startTursoMirrorForCurrentUser(), 0);
-    return true;
+    return data.user;
   } catch(e) {
-    console.warn('Sessione Turso non avviata; Firebase resta operativo:', e.message || e);
-    return false;
-  }
-}
-
-function normalizeFirestoreValue(value, seen) {
-  if (value === null || value === undefined) return value === undefined ? null : value;
-  if (typeof value !== 'object') return value;
-  if (value instanceof Date) return { __type: 'date', value: value.toISOString() };
-  if (typeof value.toDate === 'function') {
-    try { return { __type: 'timestamp', value: value.toDate().toISOString() }; } catch(e) {}
-  }
-  if (value.path && typeof value.path === 'string' && value.constructor && /Reference/.test(value.constructor.name)) {
-    return { __type: 'reference', value: value.path };
-  }
-  if (seen.has(value)) return null;
-  seen.add(value);
-  if (Array.isArray(value)) {
-    const result = value.map(item => normalizeFirestoreValue(item, seen));
-    seen.delete(value);
-    return result;
-  }
-  const result = {};
-  Object.keys(value).forEach(key => { result[key] = normalizeFirestoreValue(value[key], seen); });
-  seen.delete(value);
-  return result;
-}
-
-function serializeFirestoreData(data) {
-  return normalizeFirestoreValue(data || {}, new WeakSet());
-}
-
-async function tursoMirrorPut(collectionPath, docId, data) {
-  const record = {
-    collectionPath,
-    docId: String(docId),
-    data: serializeFirestoreData(data),
-    updatedAt: Date.now()
-  };
-  return queueTursoWrite(() => tursoApi('documents:upsert', { record }, true));
-}
-
-async function tursoMirrorDelete(collectionPath, docId, previousData) {
-  const payload = {
-    collectionPath,
-    docId: String(docId),
-    previousData: serializeFirestoreData(previousData || {})
-  };
-  return queueTursoWrite(() => tursoApi('documents:delete', payload, true));
-}
-
-async function tursoMirrorMany(records) {
-  if (!records.length) return;
-  return queueTursoWrite(async () => {
-    for (let i = 0; i < records.length; i += 100) {
-      await tursoApi('documents:upsertMany', { records: records.slice(i, i + 100) }, true);
-    }
-  });
-}
-
-async function tursoReconcileSnapshot(collectionPath, snapshot) {
-  const records = snapshot.docs.map(doc => ({
-    collectionPath,
-    docId: doc.id,
-    data: serializeFirestoreData(doc.data()),
-    deleted: false,
-    updatedAt: Date.now()
-  }));
-  return queueTursoWrite(() => tursoApi('documents:reconcile', { collectionPath, records }, true));
-}
-
-async function mirrorSnapshotChanges(collectionPath, snapshot, isAdmin) {
-  const changes = snapshot.docChanges();
-  if (!changes.length) return;
-  if (isAdmin) {
-    const records = changes.map(change => ({
-      collectionPath,
-      docId: change.doc.id,
-      data: serializeFirestoreData(change.doc.data()),
-      deleted: change.type === 'removed',
-      updatedAt: Date.now()
-    }));
-    await tursoMirrorMany(records);
-    return;
-  }
-  for (const change of changes) {
-    if (change.type === 'removed') {
-      await tursoMirrorDelete(collectionPath, change.doc.id, change.doc.data());
-    } else {
-      await tursoMirrorPut(collectionPath, change.doc.id, change.doc.data());
-    }
-  }
-}
-
-function addTursoMirrorListener(collectionPath, query, isAdmin) {
-  let firstSnapshot = true;
-  const unsub = query.onSnapshot(snapshot => {
-    const operation = isAdmin && firstSnapshot
-      ? tursoReconcileSnapshot(collectionPath, snapshot)
-      : mirrorSnapshotChanges(collectionPath, snapshot, isAdmin);
-    firstSnapshot = false;
-    operation.catch(e => console.warn('Mirror Turso ' + collectionPath + ':', e.message || e));
-  }, e => console.warn('Listener mirror ' + collectionPath + ':', e.message || e));
-  tursoMirrorUnsubs.push(unsub);
-}
-
-function startTursoMirrorForCurrentUser() {
-  if (typeof currentUser === 'undefined' || !currentUser || !getTursoSessionToken()) return;
-  const owner = currentUser.email + '|' + currentUser.role;
-  if (tursoMirrorOwner === owner) return;
-  tursoMirrorUnsubs.forEach(unsub => { try { unsub(); } catch(e) {} });
-  tursoMirrorUnsubs = [];
-  tursoMirrorOwner = owner;
-
-  const isAdmin = currentUser.role === 'admin';
-  if (isAdmin) {
-    const collections = [
-      'settings', 'counts', 'bookings', 'users', 'admins', 'controllers',
-      'helpers', 'waitlist', 'annunci', 'hype', 'staffradio', 'analytics'
-    ];
-    collections.forEach(name => addTursoMirrorListener(name, db.collection(name), true));
-    const ids = [...new Set(activities.map(a => Number(a.id)).filter(Number.isFinite))];
-    ids.forEach(id => {
-      const path = 'chats/' + id + '/messages';
-      addTursoMirrorListener(path, db.collection('chats').doc(String(id)).collection('messages'), true);
-    });
-    console.log('✅ Mirror Firebase → Turso attivo per tutte le raccolte');
-  } else {
-    addTursoMirrorListener('users', db.collection('users').where('email', '==', currentUser.email), false);
-    addTursoMirrorListener('bookings', db.collection('bookings').where('userEmail', '==', currentUser.email), false);
-    addTursoMirrorListener('waitlist', db.collection('waitlist').where('userEmail', '==', currentUser.email), false);
+    console.warn('Accesso Turso non riuscito:', e.message || e);
+    return null;
   }
 }
 
@@ -3076,18 +3145,14 @@ async function loadActivitiesFromTurso() {
   try {
     const data = await tursoApi('activities:list', {}, false);
     const rows = data.rows || [];
-    if (!rows.length) {
-      console.log('Turso: nessuna attività trovata, uso dati Firebase/locali');
-      return false;
-    }
+    if (!rows.length) return false;
+    sharedActivitiesLoaded = true;
     activities.length = 0;
     rows.forEach(r => {
-      let dayVal = String(r.day || '');
-      if (dayVal.startsWith('day')) dayVal = dayVal.replace('day', '');
       const activityId = Number(r.id);
       activities.push({
         id: Number.isFinite(activityId) ? activityId : r.id,
-        day: dayVal,
+        day: String(r.day || '').replace(/^day/i, ''),
         time: r.time || '',
         title: r.title || '',
         emoji: r.emoji || '',
@@ -3101,7 +3166,6 @@ async function loadActivitiesFromTurso() {
       });
       if (counts[activityId] === undefined) counts[activityId] = 0;
     });
-    console.log('Turso: caricate ' + activities.length + ' attività');
     const escapeRoom = activities.find(a => Number(a.id) === 32);
     if (escapeRoom) {
       escapeRoom.time = '15:30 - 16:30';
@@ -3110,7 +3174,6 @@ async function loadActivitiesFromTurso() {
     renderActivities(currentFilter);
     if (typeof renderSportGrid === 'function') renderSportGrid();
     if (typeof refreshAdminActivities === 'function') refreshAdminActivities();
-    if (typeof currentUser !== 'undefined' && currentUser?.role === 'admin') startTursoMirrorForCurrentUser();
     return true;
   } catch (e) {
     console.error('Errore caricamento attività da Turso:', e);
@@ -3120,7 +3183,7 @@ async function loadActivitiesFromTurso() {
 
 async function saveActivitiesToTurso() {
   try {
-    const data = await queueTursoWrite(() => tursoApi('activities:replace', { activities }, true));
+    const data = await tursoApi('activities:replace', { activities }, true);
     console.log('Turso: salvate ' + data.count + ' attività con backup storico');
     return true;
   } catch (e) {
@@ -3128,6 +3191,7 @@ async function saveActivitiesToTurso() {
     return false;
   }
 }
+
 // ==================== STATO GLOBALE ====================
 let MAX_PER_ACTIVITY = 15;
 function capFor(a){ return (a && typeof a.max === 'number' && a.max > 0) ? a.max : MAX_PER_ACTIVITY; }
@@ -3224,7 +3288,7 @@ const dayNames = {
 // Etichetta breve usata in pannelli admin/heatmap (giorno interno → data reale)
 const dayShort = { '1':'2 Set', '2':'3 Set', '3':'4 Set' };
 
-// ==================== IMPOSTAZIONI SITO SU FIRESTORE ====================
+// ==================== IMPOSTAZIONI SITO SU TURSO ====================
 const siteTexts = {}; 
 const TEXT_SELECTOR_MAP = {
   'hero-titolo':           {selector:'.hero h1',            prop:'innerHTML'},
@@ -3249,14 +3313,14 @@ async function saveSiteSettings(partial) {
   }
 }
 
-async function saveActivitiesToFirestore() {
+async function saveActivitiesToDatabase() {
   try {
     await db.collection('settings').doc('activities').set({
       list: activities,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      updatedAt: DB_FIELD_VALUE.serverTimestamp()
     }, {merge:false});
     const tursoOk = await saveActivitiesToTurso();
-    if (!tursoOk) showToast('⚠️ Salvata su Firebase; copia Turso in attesa di sincronizzazione');
+    if (!tursoOk) throw new Error('Salvataggio tabella attività non riuscito');
     return true;
   } catch(e) {
     console.error('Errore salvataggio attività:', e);
@@ -3272,7 +3336,7 @@ function dayDate(day) {
   return m ? m[1] : (DAY_DATE_FALLBACK[day] || day);
 }
 
-let firestoreActivitiesLoaded = false;
+let sharedActivitiesLoaded = false;
 
 function loadSiteSettings() {
   db.collection('settings').doc('site').onSnapshot(siteDoc => {
@@ -3304,7 +3368,7 @@ function loadSiteSettings() {
         btn.style.color = bookingsPaused ? '#16a34a' : '#6b7280';
       }
     }
-    if (Array.isArray(s.introData) && s.introData.length) { introData = s.introData; introDataFromFirestore = true; }
+    if (Array.isArray(s.introData) && s.introData.length) { introData = s.introData; introDataFromTurso = true; }
     if (s.texts) {
       Object.assign(siteTexts, s.texts);
       Object.keys(s.texts).forEach(k => {
@@ -3327,34 +3391,9 @@ function loadSiteSettings() {
     if (typeof renderSportGrid === 'function') renderSportGrid();
   }, e => console.error('Errore ascolto impostazioni condivise:', e));
 
-  db.collection('settings').doc('activities').onSnapshot(actDoc => {
-    if (!actDoc.exists) return;
-    const list = actDoc.data().list;
-    if (!Array.isArray(list) || !list.length) return;
-    firestoreActivitiesLoaded = true;
-    activities.length = 0;
-    list.forEach(a => {
-      const numericId = Number(a.id);
-      const normalized = { ...a, id: Number.isFinite(numericId) ? numericId : a.id };
-      activities.push(normalized);
-      if (counts[normalized.id] === undefined) counts[normalized.id] = 0;
-    });
-    // Fix: assicura che l'Escape Room (id:32) abbia sempre orario e luogo corretti
-    const escapeRoom = activities.find(a => Number(a.id) === 32);
-    if (escapeRoom) {
-      escapeRoom.time = '15:30 - 16:30';
-      escapeRoom.location = 'Scuola Secondaria Di Duccio, Miramare';
-    }
-    renderActivities(currentFilter);
-    if (typeof renderSportGrid === 'function') renderSportGrid();
-    if (typeof refreshAdminActivities === 'function') refreshAdminActivities();
-  }, e => {
-    console.error('Errore ascolto attività condivise:', e);
-    if (!firestoreActivitiesLoaded) loadActivitiesFromTurso();
-  });
 }
 
-// counts[activityId] = numero prenotazioni (sincronizzato da Firebase)
+// counts[activityId] = numero prenotazioni sincronizzato da Turso
 const counts = {};
 activities.forEach(a => counts[a.id] = 0);
 
@@ -3381,7 +3420,7 @@ function isRegistrationClosed() {
   return new Date() > new Date(regCloseDate);
 }
 
-// ==================== FIREBASE SYNC ====================
+// ==================== TURSO SYNC ====================
 // Ascolta i contatori in tempo reale
 function listenCounts() {
   db.collection('counts').onSnapshot(snapshot => {
@@ -3404,7 +3443,7 @@ function listenBookings() {
       renderActivities(currentFilter);
     }, err => {
       // Fallback: leggi senza filtro e filtra lato client
-      console.warn('Firestore query error, using fallback:', err);
+      console.warn('Turso query error, using fallback:', err);
       db.collection('bookings').onSnapshot(snapshot => {
         bookings = snapshot.docs
           .map(d => ({...d.data(), _docId: d.id}))
@@ -3415,52 +3454,24 @@ function listenBookings() {
     });
 }
 
-// Salva prenotazione su Firebase
-async function saveBookingToFirebase(bookingData) {
-  // Usa transazione per aggiornare il contatore in modo sicuro
-  const countRef = db.collection('counts').doc(String(bookingData.id));
-  const bookingRef = db.collection('bookings').doc();
-  let newTotal = 0;
-
-  await db.runTransaction(async t => {
-    const countDoc = await t.get(countRef);
-    const current = countDoc.exists ? (countDoc.data().total || 0) : 0;
-    if (current + bookingData.num > capFor(bookingData)) {
-      throw new Error('posti_esauriti');
-    }
-    newTotal = current + bookingData.num;
-    t.set(countRef, { total: newTotal });
-    t.set(bookingRef, bookingData);
-  });
-
-  Promise.allSettled([
-    tursoMirrorPut('bookings', bookingRef.id, bookingData),
-    tursoMirrorPut('counts', String(bookingData.id), { total: newTotal })
-  ]).catch(() => {});
-  return bookingRef.id;
+// Salva prenotazione su Turso con controllo atomico dei posti
+async function saveBookingToDatabase(bookingData) {
+  const result = await tursoApi('bookings:create', {
+    bookingData,
+    capacity: capFor(bookingData)
+  }, true);
+  counts[bookingData.id] = Number(result.total) || 0;
+  renderActivities(currentFilter);
+  return result.docId;
 }
 
-// Elimina prenotazione da Firebase
-async function deleteBookingFromFirebase(docId, activityId, num) {
-  const countRef = db.collection('counts').doc(String(activityId));
-  const bookingRef = db.collection('bookings').doc(docId);
-  let newTotal = 0;
-  let previousBooking = {};
-
-  await db.runTransaction(async t => {
-    const countDoc = await t.get(countRef);
-    const bookingDoc = await t.get(bookingRef);
-    const current = countDoc.exists ? (countDoc.data().total || 0) : 0;
-    previousBooking = bookingDoc.exists ? bookingDoc.data() : {};
-    newTotal = Math.max(0, current - num);
-    t.set(countRef, { total: newTotal });
-    t.delete(bookingRef);
-  });
-
-  Promise.allSettled([
-    tursoMirrorDelete('bookings', docId, previousBooking),
-    tursoMirrorPut('counts', String(activityId), { total: newTotal })
-  ]).catch(() => {});
+// Elimina prenotazione da Turso e aggiorna atomicamente il contatore
+async function deleteBookingFromDatabase(docId, activityId, num) {
+  const result = await tursoApi('bookings:delete', { docId }, true);
+  counts[activityId] = Number(result.total) || 0;
+  bookings = bookings.filter(booking => booking._docId !== docId);
+  updatePanel();
+  renderActivities(currentFilter);
 }
 
 function getCapacityClass(n, cap) {
@@ -3501,10 +3512,10 @@ let introData = [
     tags:['Improvvisazione','GDR','Cinema','Palco'] },
 ];
 
-// Load from localStorage if admin changed them (skipped once Firestore-synced data is active)
-let introDataFromFirestore = false;
+// Carica dal dispositivo solo finché i dati condivisi Turso non sono disponibili
+let introDataFromTurso = false;
 function loadIntroData() {
-  if (introDataFromFirestore) return;
+  if (introDataFromTurso) return;
   const saved = localStorage.getItem('fdc_introData');
   if (saved) { try { introData = JSON.parse(saved); } catch(e){} }
 }
@@ -3785,21 +3796,23 @@ async function confirmBooking() {
     nome, cognome, eta, orario, num,
     note: typeof fullNote !== 'undefined' ? (fullNote || '') : (note || ''),
     userEmail: currentUser ? currentUser.email : 'anonimo',
-    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    timestamp: DB_FIELD_VALUE.serverTimestamp()
   };
 
   const act = currentAct;
   closeModal();
 
   try {
-    await saveBookingToFirebase(bookingData);
+    const savedDocId = await saveBookingToDatabase(bookingData);
+    bookingData._docId = savedDocId;
+    if (!bookings.some(booking => booking._docId === savedDocId)) bookings.push({ ...bookingData });
+    updatePanel();
     incrementDailyCount();
     setTimeout(() => {
       document.getElementById('successActivity').textContent = act.emoji+' '+act.title+' · '+dayNames[act.day];
       document.getElementById('successOverlay').classList.add('open');
       launchConfetti();
-      // Cerca il docId aggiornato da Firebase in bookings[]
-      const saved = bookings.find(b => b.id === act.id && b.userEmail === bookingData.userEmail);
+      const saved = bookings.find(b => b._docId === savedDocId);
       showQRInSuccess(saved || bookingData);
     }, 800);
     showToast('🎉 Prenotazione confermata!');
@@ -3810,6 +3823,8 @@ async function confirmBooking() {
   } catch(err) {
     if (err.message === 'posti_esauriti') {
       showToast('😔 Posti esauriti nel frattempo!');
+    } else if (err.message === 'prenotazione_duplicata') {
+      showToast('ℹ️ Hai già prenotato questa attività');
     } else {
       showToast('❌ Errore salvataggio. Riprova.');
     }
@@ -3838,7 +3853,7 @@ async function confirmCancel() {
   if (!b) return;
   closeCancelModal();
   try {
-    await deleteBookingFromFirebase(b._docId, b.id, b.num || 1);
+    await deleteBookingFromDatabase(b._docId, b.id, b.num || 1);
     showToast('🗑️ Prenotazione annullata');
   } catch(err) {
     showToast('❌ Errore annullamento. Riprova.');
@@ -4218,30 +4233,20 @@ function setupResetOtp(){
 async function sendResetOtp(){
   const email=document.getElementById('rEmail2').value.trim().toLowerCase();
   if(!email){ showAuthErr('Inserisci la tua email.'); return; }
-  // Controlla se l'utente esiste per mostrare il nome (ma non blocca se non trovato,
-  // così admin e vecchi account possono comunque reimpostare la password)
-  let foundName = '';
-  try{
-    const u = users.find(u=>u.email===email);
-    if(u){ foundName = u.nome||''; }
-    else {
-      const d=await db.collection('users').doc(email).get();
-      if(d.exists){ foundName = d.data().nome||''; }
-      else {
-        const snap=await db.collection('users').where('email','==',email).limit(1).get();
-        if(!snap.empty) foundName = snap.docs[0].data().nome||'';
-      }
-    }
-  }catch(e){}
-  resetOtp = generateOtp();
-  document.getElementById('resetSendBtn').textContent='⏳ Invio codice...';
-  const sent = await sendOtpEmail(email, foundName, resetOtp, 'reset').catch(()=>false);
-  document.getElementById('resetSendBtn').textContent='📧 Invia codice';
-  document.getElementById('resetSendBtn').style.display='none';
-  document.getElementById('resetCodeBox').style.display='block';
-  setupResetOtp();
-  if(document.getElementById('rOtp0')) document.getElementById('rOtp0').focus();
-  showToast(sent ? '📧 Codice inviato a '+email : '⚠️ Invio non riuscito. Controlla che l\'email sia corretta e riprova.');
+  const button=document.getElementById('resetSendBtn');
+  button.textContent='⏳ Invio codice...';
+  try {
+    await tursoApi('passwordReset:start', { email }, false);
+    button.style.display='none';
+    document.getElementById('resetCodeBox').style.display='block';
+    setupResetOtp();
+    if(document.getElementById('rOtp0')) document.getElementById('rOtp0').focus();
+    showToast('📧 Se l’account esiste, il codice è stato inviato a '+email);
+  } catch(e) {
+    showAuthErr(e.message || 'Invio non riuscito. Riprova.');
+  } finally {
+    button.textContent='📧 Invia codice';
+  }
 }
 async function confirmReset(){
   const email=document.getElementById('rEmail2').value.trim().toLowerCase();
@@ -4249,14 +4254,14 @@ async function confirmReset(){
   for(let i=0;i<6;i++) otp += (document.getElementById('rOtp'+i).value||'');
   const np=document.getElementById('rNewPass').value;
   if(otp.length<6){ showAuthErr('Inserisci tutte e 6 le cifre del codice.'); return; }
-  if(otp!==resetOtp){ showAuthErr('Codice non corretto. Riprova.'); return; }
   if(!np||np.length<6){ showAuthErr('La nuova password deve avere almeno 6 caratteri.'); return; }
   const hash=await hashPassword(np);
-  // aggiorna su localStorage e Firebase
-  const u=users.find(u=>u.email===email);
-  if(u){ u.passHash=hash; localStorage.setItem('fdc_users', JSON.stringify(users)); }
-  try{ await db.collection('users').doc(email).set({ email: email, passHash: hash, verified: true, role: (email===ADMIN_EMAIL?'admin':'user') }, { merge: true }).catch(()=>{}); }catch(e){}
-  resetOtp=null;
+  try {
+    await tursoApi('passwordReset:confirm', { email, code: otp, passHash: hash }, false);
+  } catch(e) {
+    showAuthErr(e.message || 'Codice non corretto o scaduto.');
+    return;
+  }
   showReset();
   showToast('✅ Password aggiornata! Ora accedi.');
   document.getElementById('lEmail').value=email;
@@ -4269,155 +4274,57 @@ async function handleAuth() {
 
   clearAuthErr();
 
-  // --- LOGIN ---
+  // --- LOGIN TURSO ---
   if (authMode === 'login') {
     const email = document.getElementById('lEmail').value.trim().toLowerCase();
     const pass  = document.getElementById('lPass').value;
-    if (!email||!pass) { showAuthErr('Compila tutti i campi.'); return; }
-    // Verifica blocco rate limiting (anti brute-force)
+    if (!email || !pass) { showAuthErr('Compila tutti i campi.'); return; }
+
     const rateCheck = LOGIN_RATE_LIMIT.check(email);
     if (!rateCheck.allowed) { showAuthErr(rateCheck.msg); return; }
-
-    // Honeypot anti-bot check
     const hp = document.getElementById('authHoneypot');
     if (hp && hp.value) { showAuthErr('Richiesta non valida.'); return; }
 
-    if (email === ADMIN_EMAIL) {
-      // Verifica la password: prima su Firebase (così il reset password funziona), poi l'hash hardcoded di fallback
-      let passOk = false;
-      try {
-        const adminDoc = await db.collection('users').doc(email).get();
-        if (adminDoc.exists && adminDoc.data().passHash) {
-          passOk = await verifyPassword(pass, adminDoc.data().passHash);
-        }
-      } catch(e){}
-      if (!passOk) {
-        passOk = await verifyPassword(pass, ADMIN_PASS_HASH);
-      }
-      if (!passOk) {
-        LOGIN_RATE_LIMIT.recordFail(email);
-        showAuthErr('Password non corretta.');
-        return;
-      }
-      LOGIN_RATE_LIMIT.reset(email);
-      currentUser = { email:ADMIN_EMAIL, nome:'Manuel', cognome:'Magnani', role:'admin' };
-      localStorage.setItem('fdc_current', JSON.stringify(trimSafeUser(currentUser)));
-      localStorage.setItem('fdc_logintime', Date.now());
-      await establishTursoSession(email, pass);
-      closeAuth();
-      updateNavbar();
-      setTimeout(() => showWelcome(currentUser), 400);
-      trackOnline();
-      return;
-    }
-
-    // Controlla se è un controllore QR
-    try {
-      const isController = await checkControllerLogin(email, pass);
-      if (isController) {
-        currentUser = { email, nome: email.split('@')[0], cognome: '', role: 'controller' };
-        localStorage.setItem('fdc_current', JSON.stringify(currentUser));
-        await establishTursoSession(email, pass);
-        closeAuth();
-        openControllerMode();
-        return;
-      }
-    } catch(e) { console.error(e); }
-
-    // Controlla se è un helper
-    try {
-      const isHelper = await checkHelperLogin(email, pass);
-      if (isHelper) {
-        currentUser = { email, nome: email.split('@')[0], cognome: '', role: 'helper' };
-        localStorage.setItem('fdc_current', JSON.stringify(currentUser));
-        await establishTursoSession(email, pass);
-        closeAuth();
-        openHelperMode();
-        return;
-      }
-    } catch(e) { console.error(e); }
-    try {
-      const adminDoc = await db.collection('admins').doc(email).get();
-      if (adminDoc.exists) {
-        const adminData = adminDoc.data();
-        // Se ha una password impostata, verificala con SHA-256 e retrocompatibilità
-        if (adminData.passHash) {
-          const passOk = await verifyPassword(pass, adminData.passHash);
-          if (!passOk) {
-            LOGIN_RATE_LIMIT.recordFail(email);
-            showAuthErr('Password non corretta.');
-            return;
-          }
-        }
-        LOGIN_RATE_LIMIT.reset(email);
-        // Cerca il profilo utente o crea uno temporaneo
-        let userDoc = await db.collection('users').doc(email).get();
-        const profile = userDoc.exists ? userDoc.data() : { nome: email.split('@')[0], cognome: '', email, role: 'admin' };
-        currentUser = { ...profile, role: 'admin' };
-        localStorage.setItem('fdc_current', JSON.stringify(currentUser));
-        localStorage.setItem('fdc_logintime', Date.now());
-        await establishTursoSession(email, pass);
-        closeAuth(); updateNavbar();
-        setTimeout(() => showWelcome(currentUser), 400);
-        trackOnline();
-        return;
-      }
-    } catch(e) { console.error(e); }
-    // Cerca prima in localStorage, poi su Firebase (doc con ID=email, poi query per campo email)
-    let user = users.find(u=>u.email===email);
-    if (!user) {
-      try {
-        const doc = await db.collection('users').doc(email).get();
-        if (doc.exists) {
-          user = doc.data();
-        } else {
-          // I vecchi account potrebbero avere un ID documento diverso dall'email.
-          // Cerca per campo email con query.
-          const snap = await db.collection('users').where('email','==',email).limit(1).get();
-          if (!snap.empty) { user = snap.docs[0].data(); }
-        }
-        if (user) {
-          users.push(user);
-          localStorage.setItem('fdc_users', JSON.stringify(users));
-        }
-      } catch(e) { console.error('Errore lettura utente:', e); }
-    }
-    if (!user) {
+    const sessionUser = await establishTursoSession(email, pass);
+    if (!sessionUser) {
       LOGIN_RATE_LIMIT.recordFail(email);
-      showAuthErr('Account non trovato. Registrati prima!');
+      showAuthErr('Email o password non corrette.');
       return;
     }
-    if (user.verified === false) { showAuthErr('Email non verificata. Registrati di nuovo.'); return; }
-    
-    const userPassOk = await verifyPassword(pass, user.passHash);
-    if (!userPassOk) {
-      // Ultimo tentativo: verifica con hash SHA-256 senza salt (vecchi account)
-      const legacyHash = await sha256hex(pass);
-      const okLegacy = (legacyHash === user.passHash);
-      if (!okLegacy) {
-        LOGIN_RATE_LIMIT.recordFail(email);
-        showAuthErr('Password non corretta.');
-        return;
+
+    let profile = null;
+    try {
+      const direct = await db.collection('users').doc(email).get();
+      if (direct.exists) profile = direct.data();
+      if (!profile) {
+        const snap = await db.collection('users').where('email', '==', email).limit(1).get();
+        if (!snap.empty) profile = snap.docs[0].data();
       }
-    }
-    // Migrazione: aggiorna l'hash al nuovo formato se necessario
-    const newHash = await hashPassword(pass);
-    if (user.passHash !== newHash) {
-      user.passHash = newHash;
-      try { await db.collection('users').doc(email).update({ passHash: newHash }).catch(()=>{}); } catch(e){}
-      const li = users.findIndex(u=>u.email===email);
-      if (li>=0) users[li].passHash = newHash;
-      localStorage.setItem('fdc_users', JSON.stringify(users));
-    }
-    LOGIN_RATE_LIMIT.reset(email);
-    currentUser = trimSafeUser(user);
+    } catch(e) { console.warn('Profilo Turso:', e); }
+
+    currentUser = trimSafeUser({
+      nome: profile?.nome || (email === ADMIN_EMAIL ? 'Manuel' : email.split('@')[0]),
+      cognome: profile?.cognome || (email === ADMIN_EMAIL ? 'Magnani' : ''),
+      ...(profile || {}),
+      email,
+      role: sessionUser.role || profile?.role || 'user'
+    });
+    const localIndex = users.findIndex(user => user.email === email);
+    if (localIndex >= 0) users[localIndex] = currentUser;
+    else users.push(currentUser);
+    localStorage.setItem('fdc_users', JSON.stringify(users));
     localStorage.setItem('fdc_current', JSON.stringify(currentUser));
-    await establishTursoSession(email, pass);
+    localStorage.setItem('fdc_logintime', Date.now());
+    LOGIN_RATE_LIMIT.reset(email);
+
     closeAuth();
     updateNavbar();
-    localStorage.setItem('fdc_logintime', Date.now());
-    setTimeout(() => showWelcome(currentUser), 400);
-    trackOnline();
+    if (currentUser.role === 'controller') openControllerMode();
+    else if (currentUser.role === 'helper') openHelperMode();
+    else {
+      setTimeout(() => showWelcome(currentUser), 400);
+      trackOnline();
+    }
     return;
   }
 
@@ -4441,11 +4348,11 @@ async function handleAuth() {
     if (!verifyCaptcha())   { showAuthErr('❌ Risposta al captcha errata!'); generateCaptcha(); document.getElementById('captchaInput').value=''; return; }
     if (email===ADMIN_EMAIL){ showAuthErr('Email non disponibile.'); return; }
 
-    // Controlla se email già registrata (localStorage + Firebase)
+    // Controlla se l'email è già registrata su Turso.
     if (users.find(u=>u.email===email)) { showAuthErr('Questa email è già registrata.'); return; }
     try {
-      const doc = await db.collection('users').doc(email).get();
-      if (doc.exists) { showAuthErr('Questa email è già registrata.'); return; }
+      const result = await tursoApi('users:exists', { email }, false);
+      if (result.exists) { showAuthErr('Questa email è già registrata.'); return; }
     } catch(e) { console.error(e); }
 
     const securePassHash = await hashPassword(pass);
@@ -4515,14 +4422,14 @@ async function handleAuth() {
   if (Date.now() > otpExpiry) { showAuthErr('Codice scaduto. Clicca "Reinvia".'); return; }
   if (enteredOtp !== pendingOtp) { showAuthErr('Codice non corretto. Riprova.'); return; }
 
-  // OTP corretto → completa registrazione su Firebase
+  // OTP corretto → completa registrazione su Turso
   clearOtpTimers();
   pendingUserData.verified = true;
-  // Salva utente su Firestore
+  // Salva utente su Turso
   try {
     await db.collection('users').doc(pendingUserData.email).set(pendingUserData);
   } catch(e) { console.error('Errore salvataggio utente:', e); }
-  users.push(pendingUserData);
+  users.push(trimSafeUser(pendingUserData));
   localStorage.setItem('fdc_users', JSON.stringify(users));
   currentUser = trimSafeUser(pendingUserData);
   localStorage.setItem('fdc_current', JSON.stringify(currentUser));
@@ -4549,7 +4456,6 @@ function logout() {
 
 function updateNavbar() {
   const right = document.getElementById('navbarRight');
-  if (currentUser && getTursoSessionToken()) setTimeout(startTursoMirrorForCurrentUser, 0);
   if (!currentUser) {
     right.innerHTML = `<button class="btn-nav-login" onclick="openAuth()">🔑 Accedi / Registrati</button>`;
     bookings = [];
@@ -4678,7 +4584,7 @@ async function adminDeleteBooking(docId, activityId, num) {
   }
   if (!confirm('Eliminare definitivamente questa prenotazione?')) return;
   try {
-    await deleteBookingFromFirebase(docId, activityId, num);
+    await deleteBookingFromDatabase(docId, activityId, num);
     showToast('🗑️ Prenotazione eliminata');
     refreshAdminBookings();
     refreshAdminDashboard();
@@ -4747,7 +4653,7 @@ function saveActivity(id) {
   renderActivities(currentFilter);
   renderSportGrid();
   refreshAdminActivities();
-  saveActivitiesToFirestore().then(ok => {
+  saveActivitiesToDatabase().then(ok => {
     showToast(ok ? '✅ Attività salvata per tutti!' : '⚠️ Attività salvata solo qui');
   });
 }
@@ -4774,7 +4680,7 @@ function deleteActivity(id) {
   renderSportGrid();
   refreshAdminActivities();
   refreshAdminDashboard();
-  saveActivitiesToFirestore().then(ok => {
+  saveActivitiesToDatabase().then(ok => {
     showToast(ok ? '🗑️ Attività eliminata per tutti!' : '⚠️ Eliminata solo qui');
   });
 }
@@ -4973,7 +4879,7 @@ function saveIntroCard() {
   if (tagsRaw) introData[idx].tags = tagsRaw.split(',').map(t=>t.trim()).filter(Boolean);
   if (day)   introData[idx].day   = day;
   saveIntroData();
-  introDataFromFirestore = true;
+  introDataFromTurso = true;
   renderSportGrid();
   saveSiteSettings({ introData }).then(ok => {
     showToast(ok ? '✅ Card "' + (name||id) + '" aggiornata per tutti!' : '⚠️ Aggiornata solo qui');
@@ -5061,7 +4967,7 @@ function addNewActivity(suffix = '') {
   renderActivities(currentFilter);
   renderSportGrid();
   refreshAdminActivities();
-  saveActivitiesToFirestore().then(ok => {
+  saveActivitiesToDatabase().then(ok => {
     showToast(ok ? `✅ Attività "${title}" aggiunta per tutti!` : `⚠️ "${title}" aggiunta solo qui`);
   });
 }
@@ -5071,13 +4977,13 @@ async function addAdmin() {
   const pass  = document.getElementById('newAdminPass').value;
   if (!email) { showToast('⚠️ Inserisci un\'email'); return; }
 
-  // Salva su Firestore nella collezione 'admins'
+  // Salva su Turso nella collezione 'admins'
   const securePassHash = pass ? await hashPassword(pass) : null;
   const adminData = {
     email: sanitizeInput(email, 150),
     passHash: securePassHash,
     addedBy: currentUser ? currentUser.email : 'system',
-    addedAt: firebase.firestore.FieldValue.serverTimestamp()
+    addedAt: DB_FIELD_VALUE.serverTimestamp()
   };
 
   try {
@@ -5147,7 +5053,7 @@ async function addController() {
       email: sanitizeInput(email, 150),
       passHash: securePassHash,
       addedBy: currentUser ? currentUser.email : 'system',
-      addedAt: firebase.firestore.FieldValue.serverTimestamp()
+      addedAt: DB_FIELD_VALUE.serverTimestamp()
     });
     document.getElementById('newControllerEmail').value = '';
     document.getElementById('newControllerPass').value  = '';
@@ -5356,10 +5262,9 @@ async function joinWaitlist(activityId) {
   const waitlistData = {
     activityId, userEmail: currentUser.email,
     nome: currentUser.nome, cognome: currentUser.cognome,
-    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    timestamp: DB_FIELD_VALUE.serverTimestamp()
   };
   await wRef.set(waitlistData);
-  wRef.get().then(doc => tursoMirrorPut('waitlist', wRef.id, doc.data() || waitlistData)).catch(() => {});
   showToast('📋 Aggiunto alla lista d\'attesa!');
 }
 
@@ -5386,7 +5291,7 @@ async function checkWaitlist(activityId) {
 
 // ==================== QR CODE VALIDATO ====================
 function generateQR(bookingData) {
-  // Il QR contiene il docId di Firebase — verificabile in tempo reale
+  // Il QR contiene il docId di Turso — verificabile in tempo reale
   const docId = bookingData._docId || 'INVALID';
   // Dati compatti (senza encode inutile degli spazi) per QR meno denso
   const payload = `FESTIVAL-FDC|${docId}|${bookingData.nome} ${bookingData.cognome}|${bookingData.title}|${dayNames[bookingData.day]}`;
@@ -5418,7 +5323,7 @@ async function showQRPanel(docId) {
   const b = bookings.find(b=>b._docId===docId);
   if (!b) return;
 
-  // Verifica su Firebase che la prenotazione esista ancora
+  // Verifica su Turso che la prenotazione esista ancora
   try {
     const snap = await db.collection('bookings').doc(docId).get();
     if (!snap.exists) {
@@ -5747,16 +5652,17 @@ loadIntroData();
 renderSportGrid();
 loadPrenotaTexts();
 initSettingsToggles();
-// Firebase è la fonte primaria; Turso interviene come fallback senza sovrascrivere dati più recenti.
-setTimeout(() => {
-  if (!firestoreActivitiesLoaded) {
-    loadActivitiesFromTurso().then(ok => {
-      if (ok) console.log('✅ Attività recuperate dal fallback Turso');
-      else console.log('ℹ️ Uso attività locali (Firebase/Turso non disponibili)');
-    });
-  }
-}, 1800);
-// Re-render sport grid dopo che Firebase ha caricato i dati
+// La tabella activities di Turso è la fonte ufficiale del programma.
+loadActivitiesFromTurso().then(ok => {
+  if (ok) console.log('✅ Attività caricate da Turso');
+  else console.log('ℹ️ Uso attività locali (Turso non disponibile)');
+});
+// Aggiornamento periodico per gli altri utenti; non interrompe le modifiche nel pannello admin.
+setInterval(() => {
+  const adminOpen = document.getElementById('adminOverlay')?.classList.contains('open');
+  if (!adminOpen) loadActivitiesFromTurso();
+}, 15000);
+// Re-render sport grid dopo il caricamento dei dati Turso
 setTimeout(() => { loadIntroData(); renderSportGrid(); }, 1500);
 
 // ==================== COUNTDOWN ====================
@@ -5872,7 +5778,7 @@ function trackOnline() {
   }, 120000);
   // Rimuovi al logout
   window.addEventListener('beforeunload', () => {
-    onlineRef.update({ [uid]: firebase.firestore.FieldValue.delete() });
+    onlineRef.update({ [uid]: DB_FIELD_VALUE.delete() });
   });
 }
 
@@ -6420,7 +6326,7 @@ async function addHelper() {
     await db.collection('helpers').doc(email).set({
       email, passHash,
       addedBy: currentUser ? currentUser.email : '',
-      addedAt: firebase.firestore.FieldValue.serverTimestamp()
+      addedAt: DB_FIELD_VALUE.serverTimestamp()
     });
     await db.collection('users').doc(email).update({ role: 'helper' }).catch(()=>{});
     document.getElementById('newHelperEmail').value = '';
@@ -6463,7 +6369,7 @@ async function setUserRole(email, role) {
         await db.collection(c).doc(email).set({
           email, passHash,
           addedBy: currentUser ? currentUser.email : '',
-          addedAt: firebase.firestore.FieldValue.serverTimestamp()
+          addedAt: DB_FIELD_VALUE.serverTimestamp()
         });
       } else {
         await db.collection(c).doc(email).delete().catch(()=>{});
@@ -6725,10 +6631,9 @@ async function publishAnnuncio() {
     const announcementData = {
       title, body, emoji, type,
       author: currentUser.nome + ' ' + currentUser.cognome,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      timestamp: DB_FIELD_VALUE.serverTimestamp()
     };
-    const announcementRef = await db.collection('annunci').add(announcementData);
-    announcementRef.get().then(doc => tursoMirrorPut('annunci', announcementRef.id, doc.data() || announcementData)).catch(() => {});
+    await db.collection('annunci').add(announcementData);
     document.getElementById('newAnnTitle').value = '';
     document.getElementById('newAnnBody').value  = '';
     document.getElementById('newAnnEmoji').value = '📢';
@@ -6746,7 +6651,6 @@ async function deleteAnnuncio(docId) {
     const announcementRef = db.collection('annunci').doc(docId);
     const previous = await announcementRef.get();
     await announcementRef.delete();
-    tursoMirrorDelete('annunci', docId, previous.exists ? previous.data() : {}).catch(() => {});
     showToast('🗑️ Annuncio eliminato');
     refreshAdminAnnunci();
     renderAnnunci();
@@ -6782,7 +6686,7 @@ function refreshAdminAnnunci() {
 }
 
 // Gli annunci ufficiali sono mostrati in evidenza (con immagine) sopra il feed.
-// Se gli stessi esistono anche nel database Firebase, li escludiamo per evitare doppioni.
+// Esclude eventuali duplicati già presenti nella raccolta utenti Turso.
 const OFFICIAL_ANNUNCI_SIGNATURES = [
   'patrocinio comune rimini',
   'flash mob pace movimento miramare',
@@ -6984,12 +6888,10 @@ async function toggleHype(actId) {
   if(hcEl) hcEl.textContent = fdcHype[actId]||'';
   var btn = document.querySelector('[onclick="toggleHype('+actId+')"]');
   if(btn) { btn.classList.toggle('hyped',!was); btn.childNodes[0].textContent=(!was?'❤️':'🤍')+' '; }
-  // Sync Firebase + mirror Turso
+  // Sync Turso
   try {
     const hypeRef = db.collection('hype').doc(String(actId));
-    await hypeRef.set({count: firebase.firestore.FieldValue.increment(was?-1:1)},{merge:true});
-    const hypeDoc = await hypeRef.get();
-    tursoMirrorPut('hype', String(actId), hypeDoc.data() || {count:fdcHype[actId]||0}).catch(() => {});
+    await hypeRef.set({count: DB_FIELD_VALUE.increment(was?-1:1)},{merge:true});
   } catch(e){}
 }
 
@@ -7088,16 +6990,14 @@ async function sendChat() {
   if(!text) return;
   inp.value='';
   try {
-    const chatPath = 'chats/' + String(fdcChatActId) + '/messages';
     const chatData = {
       text: text,
       nome: currentUser.nome+' '+currentUser.cognome,
       email: currentUser.email,
-      ts: firebase.firestore.FieldValue.serverTimestamp()
+      ts: DB_FIELD_VALUE.serverTimestamp()
     };
-    const chatRef = await db.collection('chats').doc(String(fdcChatActId))
+    await db.collection('chats').doc(String(fdcChatActId))
       .collection('messages').add(chatData);
-    chatRef.get().then(doc => tursoMirrorPut(chatPath, chatRef.id, doc.data() || chatData)).catch(() => {});
   } catch(e){ showToast('❌ Errore invio messaggio'); }
 }
 
@@ -7323,10 +7223,9 @@ async function sendWT() {
       nome: currentUser.nome + ' ' + (currentUser.cognome || ''),
       email: currentUser.email,
       role: currentUser.role,
-      ts: firebase.firestore.FieldValue.serverTimestamp()
+      ts: DB_FIELD_VALUE.serverTimestamp()
     };
-    const radioRef = await db.collection('staffradio').add(radioData);
-    radioRef.get().then(doc => tursoMirrorPut('staffradio', radioRef.id, doc.data() || radioData)).catch(() => {});
+    await db.collection('staffradio').add(radioData);
   } catch(e) { showToast('❌ Errore invio'); }
 }
 
@@ -7620,7 +7519,7 @@ function setCookieConsent(type){
   p.date = new Date().toISOString();
   localStorage.setItem('fdc_consent', JSON.stringify(p));
   closeCookieBanner();
-  // I servizi essenziali (Firebase, EmailJS) sono già attivi e necessari.
+  // I servizi essenziali (Turso via Netlify ed EmailJS) sono già attivi e necessari.
   // Nessun servizio di analisi/marketing viene caricato finché non accettato.
 }
 function toggleCookiePrefs(){
