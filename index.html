@@ -264,6 +264,14 @@ input, select, textarea { font-size: 16px !important; }
 .panel-item-meta { font-size:.75rem; color:#9ca3af; }
 .btn-cancel-booking { background:#fee2e2; color:#dc2626; border:none; width:28px; height:28px; border-radius:8px; cursor:pointer; font-size:.85rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .2s; font-weight:700; }
 .btn-cancel-booking:hover { background:#dc2626; color:white; transform:scale(1.1); }
+/* Il comando admin resta visibile anche quando la tabella scorre orizzontalmente. */
+#bookingsTable th:last-child,
+#bookingsTable td:last-child { position:sticky; right:0; z-index:2; background:var(--card, #fff); min-width:154px; box-shadow:-8px 0 12px rgba(15,23,42,.05); }
+#bookingsTable th:last-child { z-index:3; }
+.admin-delete-booking { background:#fee2e2; color:#dc2626; border:1px solid #fecaca; padding:7px 11px; border-radius:9px; cursor:pointer; font-size:.75rem; font-weight:800; white-space:nowrap; }
+.admin-delete-booking:hover { background:#dc2626; color:#fff; }
+body.dark #bookingsTable th:last-child,
+body.dark #bookingsTable td:last-child { background:#16112e; }
 
 /* CANCEL CONFIRM MODAL */
 .cancel-overlay { display:none; position:fixed; inset:0; background:rgba(30,27,75,.6); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; padding:20px; }
@@ -2043,20 +2051,20 @@ body.dark .cookie-pref-row { border-color:#3d2a6e; }
           <h3 style="font-size:.95rem;font-weight:800;margin-bottom:14px;color:var(--text)">➕ Aggiungi nuova attività</h3>
           <div class="edit-grid">
             <div class="form-group"><label class="form-label">Titolo</label>
-              <input class="admin-input" id="newActTitle" placeholder="Es. Yoga"></div>
+              <input class="admin-input" id="newActTitleSettings" placeholder="Es. Yoga"></div>
             <div class="form-group"><label class="form-label">Emoji</label>
-              <input class="admin-input" id="newActEmoji" placeholder="Es. 🧘"></div>
+              <input class="admin-input" id="newActEmojiSettings" placeholder="Es. 🧘"></div>
             <div class="form-group"><label class="form-label">Categoria</label>
-              <input class="admin-input" id="newActCat" placeholder="Es. Sport"></div>
+              <input class="admin-input" id="newActCatSettings" placeholder="Es. Sport"></div>
             <div class="form-group"><label class="form-label">Giorno</label>
-              <select class="admin-input" id="newActDay">
+              <select class="admin-input" id="newActDaySettings">
                 <option value="1">2 Settembre</option>
                 <option value="2">3 Settembre</option>
                 <option value="3">4 Settembre</option>
               </select>
             </div>
             <div class="form-group"><label class="form-label">Tema colore</label>
-              <select class="admin-input" id="newActTheme">
+              <select class="admin-input" id="newActThemeSettings">
                 <option value="sport">Sport (blu)</option>
                 <option value="arte">Arte (rosa)</option>
                 <option value="natura">Natura (verde)</option>
@@ -2068,7 +2076,7 @@ body.dark .cookie-pref-row { border-color:#3d2a6e; }
               </select>
             </div>
           </div>
-          <button class="btn-save" onclick="addNewActivity()">➕ Aggiungi attività</button>
+          <button class="btn-save" onclick="addNewActivity('Settings')">➕ Aggiungi attività</button>
         </div>
 
         <!-- Controlli prenotazioni -->
@@ -2877,86 +2885,224 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ==================== TURSO DATABASE ====================
-const TURSO_URL = 'https://festivalcreattivita-festivalutente.aws-eu-west-1.turso.io';
-const TURSO_TOKEN = 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODc2NTExMzcsImlkIjoiMDFhMDM4NGQtNzAwMS03ZjYxLTk5OTYtYTc0ODg2YTM5NThiIiwia2lkIjoiblNZNlU2MXk2QTRfaVhOSC1TVjYtWlBQSmVQYnR4cmw5SFZRZlBDa00xQSIsInJpZCI6ImQ2MzAyMDBkLTUyMzYtNDQ1Yy1iNjFlLTk2MTMwMzIxNTY3YiJ9.HDkC3sj4X78Bo01SssKc2G3l11wIXkkWV_j70AaTdMTlsDofqqQe5aLDwu5rB2fA6nh_-LJs2vuxMzi6OhkYDA';
+// ==================== TURSO DATABASE (via Netlify Function) ====================
+// Il token Turso resta sul server: non deve mai essere inserito nell'HTML pubblico.
+const TURSO_API = '/.netlify/functions/turso';
+const TURSO_SESSION_KEY = 'fdc_turso_session';
+let tursoMirrorUnsubs = [];
+let tursoMirrorOwner = '';
+let tursoWriteQueue = Promise.resolve();
 
-async function tursoQuery(sql, args) {
+function queueTursoWrite(task) {
+  const run = tursoWriteQueue.then(task, task);
+  tursoWriteQueue = run.catch(() => {});
+  return run;
+}
+
+function getTursoSessionToken() {
+  return localStorage.getItem(TURSO_SESSION_KEY) || '';
+}
+
+function clearTursoSession() {
+  localStorage.removeItem(TURSO_SESSION_KEY);
+  tursoMirrorUnsubs.forEach(unsub => { try { unsub(); } catch(e) {} });
+  tursoMirrorUnsubs = [];
+  tursoMirrorOwner = '';
+}
+
+async function tursoApi(action, payload, authenticated) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authenticated) {
+    const token = getTursoSessionToken();
+    if (!token) throw new Error('Sessione Turso non disponibile: esci e accedi di nuovo');
+    headers.Authorization = 'Bearer ' + token;
+  }
+  const res = await fetch(TURSO_API, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ action, ...(payload || {}) })
+  });
+  let data = null;
+  try { data = await res.json(); } catch(e) {}
+  if (!res.ok || !data || data.ok === false) {
+    if (authenticated && (res.status === 401 || res.status === 403)) clearTursoSession();
+    throw new Error((data && data.error) || ('Errore API Turso (' + res.status + ')'));
+  }
+  return data;
+}
+
+async function establishTursoSession(email, password) {
   try {
-    const res = await fetch(TURSO_URL + '/v2/pipeline', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + TURSO_TOKEN,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ requests: [{ type: 'execute', stmt: { sql, args: args || [] } }] })
-    });
-    const data = await res.json();
-    if (data.results && data.results[0] && data.results[0].response && data.results[0].response.result) {
-      const result = data.results[0].response.result;
-      const cols = result.cols || [];
-      const rows = result.rows || [];
-      return rows.map(row => {
-        const obj = {};
-        row.forEach((cell, i) => {
-          obj[cols[i] ? cols[i].name : i] = cell.value;
-        });
-        return obj;
-      });
-    }
-    return [];
-  } catch (e) {
-    console.error('Turso query error:', e);
-    return [];
+    const data = await tursoApi('session', { email, password }, false);
+    localStorage.setItem(TURSO_SESSION_KEY, data.token);
+    setTimeout(() => startTursoMirrorForCurrentUser(), 0);
+    return true;
+  } catch(e) {
+    console.warn('Sessione Turso non avviata; Firebase resta operativo:', e.message || e);
+    return false;
   }
 }
 
-async function tursoExecute(sql, args) {
-  try {
-    const res = await fetch(TURSO_URL + '/v2/pipeline', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + TURSO_TOKEN,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ requests: [{ type: 'execute', stmt: { sql, args: args || [] } }] })
+function normalizeFirestoreValue(value, seen) {
+  if (value === null || value === undefined) return value === undefined ? null : value;
+  if (typeof value !== 'object') return value;
+  if (value instanceof Date) return { __type: 'date', value: value.toISOString() };
+  if (typeof value.toDate === 'function') {
+    try { return { __type: 'timestamp', value: value.toDate().toISOString() }; } catch(e) {}
+  }
+  if (value.path && typeof value.path === 'string' && value.constructor && /Reference/.test(value.constructor.name)) {
+    return { __type: 'reference', value: value.path };
+  }
+  if (seen.has(value)) return null;
+  seen.add(value);
+  if (Array.isArray(value)) {
+    const result = value.map(item => normalizeFirestoreValue(item, seen));
+    seen.delete(value);
+    return result;
+  }
+  const result = {};
+  Object.keys(value).forEach(key => { result[key] = normalizeFirestoreValue(value[key], seen); });
+  seen.delete(value);
+  return result;
+}
+
+function serializeFirestoreData(data) {
+  return normalizeFirestoreValue(data || {}, new WeakSet());
+}
+
+async function tursoMirrorPut(collectionPath, docId, data) {
+  const record = {
+    collectionPath,
+    docId: String(docId),
+    data: serializeFirestoreData(data),
+    updatedAt: Date.now()
+  };
+  return queueTursoWrite(() => tursoApi('documents:upsert', { record }, true));
+}
+
+async function tursoMirrorDelete(collectionPath, docId, previousData) {
+  const payload = {
+    collectionPath,
+    docId: String(docId),
+    previousData: serializeFirestoreData(previousData || {})
+  };
+  return queueTursoWrite(() => tursoApi('documents:delete', payload, true));
+}
+
+async function tursoMirrorMany(records) {
+  if (!records.length) return;
+  return queueTursoWrite(async () => {
+    for (let i = 0; i < records.length; i += 100) {
+      await tursoApi('documents:upsertMany', { records: records.slice(i, i + 100) }, true);
+    }
+  });
+}
+
+async function tursoReconcileSnapshot(collectionPath, snapshot) {
+  const records = snapshot.docs.map(doc => ({
+    collectionPath,
+    docId: doc.id,
+    data: serializeFirestoreData(doc.data()),
+    deleted: false,
+    updatedAt: Date.now()
+  }));
+  return queueTursoWrite(() => tursoApi('documents:reconcile', { collectionPath, records }, true));
+}
+
+async function mirrorSnapshotChanges(collectionPath, snapshot, isAdmin) {
+  const changes = snapshot.docChanges();
+  if (!changes.length) return;
+  if (isAdmin) {
+    const records = changes.map(change => ({
+      collectionPath,
+      docId: change.doc.id,
+      data: serializeFirestoreData(change.doc.data()),
+      deleted: change.type === 'removed',
+      updatedAt: Date.now()
+    }));
+    await tursoMirrorMany(records);
+    return;
+  }
+  for (const change of changes) {
+    if (change.type === 'removed') {
+      await tursoMirrorDelete(collectionPath, change.doc.id, change.doc.data());
+    } else {
+      await tursoMirrorPut(collectionPath, change.doc.id, change.doc.data());
+    }
+  }
+}
+
+function addTursoMirrorListener(collectionPath, query, isAdmin) {
+  let firstSnapshot = true;
+  const unsub = query.onSnapshot(snapshot => {
+    const operation = isAdmin && firstSnapshot
+      ? tursoReconcileSnapshot(collectionPath, snapshot)
+      : mirrorSnapshotChanges(collectionPath, snapshot, isAdmin);
+    firstSnapshot = false;
+    operation.catch(e => console.warn('Mirror Turso ' + collectionPath + ':', e.message || e));
+  }, e => console.warn('Listener mirror ' + collectionPath + ':', e.message || e));
+  tursoMirrorUnsubs.push(unsub);
+}
+
+function startTursoMirrorForCurrentUser() {
+  if (typeof currentUser === 'undefined' || !currentUser || !getTursoSessionToken()) return;
+  const owner = currentUser.email + '|' + currentUser.role;
+  if (tursoMirrorOwner === owner) return;
+  tursoMirrorUnsubs.forEach(unsub => { try { unsub(); } catch(e) {} });
+  tursoMirrorUnsubs = [];
+  tursoMirrorOwner = owner;
+
+  const isAdmin = currentUser.role === 'admin';
+  if (isAdmin) {
+    const collections = [
+      'settings', 'counts', 'bookings', 'users', 'admins', 'controllers',
+      'helpers', 'waitlist', 'annunci', 'hype', 'staffradio', 'analytics'
+    ];
+    collections.forEach(name => addTursoMirrorListener(name, db.collection(name), true));
+    const ids = [...new Set(activities.map(a => Number(a.id)).filter(Number.isFinite))];
+    ids.forEach(id => {
+      const path = 'chats/' + id + '/messages';
+      addTursoMirrorListener(path, db.collection('chats').doc(String(id)).collection('messages'), true);
     });
-    return await res.json();
-  } catch (e) {
-    console.error('Turso execute error:', e);
-    return null;
+    console.log('✅ Mirror Firebase → Turso attivo per tutte le raccolte');
+  } else {
+    addTursoMirrorListener('users', db.collection('users').where('email', '==', currentUser.email), false);
+    addTursoMirrorListener('bookings', db.collection('bookings').where('userEmail', '==', currentUser.email), false);
+    addTursoMirrorListener('waitlist', db.collection('waitlist').where('userEmail', '==', currentUser.email), false);
   }
 }
 
 async function loadActivitiesFromTurso() {
   try {
-    const rows = await tursoQuery('SELECT * FROM activities ORDER BY day, time');
-    if (!rows || rows.length === 0) {
-      console.log('Turso: nessuna attività trovata, uso dati locali');
+    const data = await tursoApi('activities:list', {}, false);
+    const rows = data.rows || [];
+    if (!rows.length) {
+      console.log('Turso: nessuna attività trovata, uso dati Firebase/locali');
       return false;
     }
     activities.length = 0;
     rows.forEach(r => {
       let dayVal = String(r.day || '');
       if (dayVal.startsWith('day')) dayVal = dayVal.replace('day', '');
+      const activityId = Number(r.id);
       activities.push({
-        id: r.id,
+        id: Number.isFinite(activityId) ? activityId : r.id,
         day: dayVal,
         time: r.time || '',
         title: r.title || '',
         emoji: r.emoji || '',
         cat: r.cat || '',
         theme: r.theme || 'mente',
-        max: r.max || 15,
+        max: Number(r.max) || 15,
         location: r.location || undefined,
         note: r.note || undefined,
-        phoneOnly: r.phoneOnly === 1 ? true : undefined,
+        phoneOnly: Number(r.phoneOnly) === 1 ? true : undefined,
         phoneNumber: r.phoneNumber || undefined
       });
-      if (counts[r.id] === undefined) counts[r.id] = 0;
+      if (counts[activityId] === undefined) counts[activityId] = 0;
     });
     console.log('Turso: caricate ' + activities.length + ' attività');
-    const escapeRoom = activities.find(a => a.id === 32);
+    const escapeRoom = activities.find(a => Number(a.id) === 32);
     if (escapeRoom) {
       escapeRoom.time = '15:30 - 16:30';
       escapeRoom.location = 'Scuola Secondaria Di Duccio, Miramare';
@@ -2964,6 +3110,7 @@ async function loadActivitiesFromTurso() {
     renderActivities(currentFilter);
     if (typeof renderSportGrid === 'function') renderSportGrid();
     if (typeof refreshAdminActivities === 'function') refreshAdminActivities();
+    if (typeof currentUser !== 'undefined' && currentUser?.role === 'admin') startTursoMirrorForCurrentUser();
     return true;
   } catch (e) {
     console.error('Errore caricamento attività da Turso:', e);
@@ -2973,21 +3120,14 @@ async function loadActivitiesFromTurso() {
 
 async function saveActivitiesToTurso() {
   try {
-    await tursoExecute('DELETE FROM activities');
-    for (const a of activities) {
-      await tursoExecute(
-        'INSERT INTO activities (id, day, time, title, emoji, cat, theme, max, location, note, phoneOnly, phoneNumber) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [a.id, a.day, a.time || '', a.title, a.emoji || '', a.cat || '', a.theme || 'mente', a.max || 15, a.location || null, a.note || null, a.phoneOnly ? 1 : 0, a.phoneNumber || null]
-      );
-    }
-    console.log('Turso: salvate ' + activities.length + ' attività');
+    const data = await queueTursoWrite(() => tursoApi('activities:replace', { activities }, true));
+    console.log('Turso: salvate ' + data.count + ' attività con backup storico');
     return true;
   } catch (e) {
     console.error('Errore salvataggio attività su Turso:', e);
     return false;
   }
 }
-
 // ==================== STATO GLOBALE ====================
 let MAX_PER_ACTIVITY = 15;
 function capFor(a){ return (a && typeof a.max === 'number' && a.max > 0) ? a.max : MAX_PER_ACTIVITY; }
@@ -3075,7 +3215,7 @@ const activities = [
   {id:30,day:'3',time:'14:30 - 15:30',title:'Uncinetto',emoji:'🧶',cat:'Artigianato & Manualità',theme:'arte',max:15,location:'Parco Spina Verde · Casina CiViVo'},
   {id:31,day:'3',time:'15:00 - 16:45',title:'Arte, carta, mani, emozioni e fantasia',emoji:'🎨',cat:'Arte & Illustrazione',theme:'arte',max:15,location:'Parco Spina Verde · Casina CiViVo',note:"Laboratorio di sculture di carta con l'artista Fuad Aziz"},
   {id:32,day:'3',time:'15:30 - 16:30',title:'ESCAPE ROOM a tema:eroine ed eroi del nostro tempo',emoji:'🦸🏻‍♂️',cat:'Cultura & Socialità',theme:'sociale',max:15,location:'Scuola Secondaria Di Duccio, Miramare'},
-  {id:33,day:'3',time:'16:45 - 18:30',title:'Ritmo, movimento, espressività e musica',emoji:'💃',cat:'Danza & Musica',theme:'teatro',max:20,location:'Parco Spina Verde · Casina CiViVo',note:'Con il coreografo Claudio Gasparotto del Movimento Centrale Danza e Teatro'}
+  {id:36,day:'3',time:'16:45 - 18:30',title:'Ritmo, movimento, espressività e musica',emoji:'💃',cat:'Danza & Musica',theme:'teatro',max:20,location:'Parco Spina Verde · Casina CiViVo',note:'Con il coreografo Claudio Gasparotto del Movimento Centrale Danza e Teatro'}
 ];
 
 const dayNames = {
@@ -3111,8 +3251,12 @@ async function saveSiteSettings(partial) {
 
 async function saveActivitiesToFirestore() {
   try {
-    await db.collection('settings').doc('activities').set({ list: activities }, {merge:false});
-    saveActivitiesToTurso().catch(e => console.error('Turso sync error:', e));
+    await db.collection('settings').doc('activities').set({
+      list: activities,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:false});
+    const tursoOk = await saveActivitiesToTurso();
+    if (!tursoOk) showToast('⚠️ Salvata su Firebase; copia Turso in attesa di sincronizzazione');
     return true;
   } catch(e) {
     console.error('Errore salvataggio attività:', e);
@@ -3127,6 +3271,8 @@ function dayDate(day) {
   const m = name.match(/(\d+)\s*Settembre/i);
   return m ? m[1] : (DAY_DATE_FALLBACK[day] || day);
 }
+
+let firestoreActivitiesLoaded = false;
 
 function loadSiteSettings() {
   db.collection('settings').doc('site').onSnapshot(siteDoc => {
@@ -3185,13 +3331,16 @@ function loadSiteSettings() {
     if (!actDoc.exists) return;
     const list = actDoc.data().list;
     if (!Array.isArray(list) || !list.length) return;
+    firestoreActivitiesLoaded = true;
     activities.length = 0;
     list.forEach(a => {
-      activities.push(a);
-      if (counts[a.id] === undefined) counts[a.id] = 0; // Fix per prevenire NaN se si sincronizzano nuove attività
+      const numericId = Number(a.id);
+      const normalized = { ...a, id: Number.isFinite(numericId) ? numericId : a.id };
+      activities.push(normalized);
+      if (counts[normalized.id] === undefined) counts[normalized.id] = 0;
     });
     // Fix: assicura che l'Escape Room (id:32) abbia sempre orario e luogo corretti
-    const escapeRoom = activities.find(a => a.id === 32);
+    const escapeRoom = activities.find(a => Number(a.id) === 32);
     if (escapeRoom) {
       escapeRoom.time = '15:30 - 16:30';
       escapeRoom.location = 'Scuola Secondaria Di Duccio, Miramare';
@@ -3199,7 +3348,10 @@ function loadSiteSettings() {
     renderActivities(currentFilter);
     if (typeof renderSportGrid === 'function') renderSportGrid();
     if (typeof refreshAdminActivities === 'function') refreshAdminActivities();
-  }, e => console.error('Errore ascolto attività condivise:', e));
+  }, e => {
+    console.error('Errore ascolto attività condivise:', e);
+    if (!firestoreActivitiesLoaded) loadActivitiesFromTurso();
+  });
 }
 
 // counts[activityId] = numero prenotazioni (sincronizzato da Firebase)
@@ -3268,6 +3420,7 @@ async function saveBookingToFirebase(bookingData) {
   // Usa transazione per aggiornare il contatore in modo sicuro
   const countRef = db.collection('counts').doc(String(bookingData.id));
   const bookingRef = db.collection('bookings').doc();
+  let newTotal = 0;
 
   await db.runTransaction(async t => {
     const countDoc = await t.get(countRef);
@@ -3275,22 +3428,39 @@ async function saveBookingToFirebase(bookingData) {
     if (current + bookingData.num > capFor(bookingData)) {
       throw new Error('posti_esauriti');
     }
-    t.set(countRef, { total: current + bookingData.num });
+    newTotal = current + bookingData.num;
+    t.set(countRef, { total: newTotal });
     t.set(bookingRef, bookingData);
   });
+
+  Promise.allSettled([
+    tursoMirrorPut('bookings', bookingRef.id, bookingData),
+    tursoMirrorPut('counts', String(bookingData.id), { total: newTotal })
+  ]).catch(() => {});
+  return bookingRef.id;
 }
 
 // Elimina prenotazione da Firebase
 async function deleteBookingFromFirebase(docId, activityId, num) {
   const countRef = db.collection('counts').doc(String(activityId));
   const bookingRef = db.collection('bookings').doc(docId);
+  let newTotal = 0;
+  let previousBooking = {};
 
   await db.runTransaction(async t => {
     const countDoc = await t.get(countRef);
+    const bookingDoc = await t.get(bookingRef);
     const current = countDoc.exists ? (countDoc.data().total || 0) : 0;
-    t.set(countRef, { total: Math.max(0, current - num) });
+    previousBooking = bookingDoc.exists ? bookingDoc.data() : {};
+    newTotal = Math.max(0, current - num);
+    t.set(countRef, { total: newTotal });
     t.delete(bookingRef);
   });
+
+  Promise.allSettled([
+    tursoMirrorDelete('bookings', docId, previousBooking),
+    tursoMirrorPut('counts', String(activityId), { total: newTotal })
+  ]).catch(() => {});
 }
 
 function getCapacityClass(n, cap) {
@@ -3845,6 +4015,7 @@ let authMode    = 'login';
 // OTP state
 let pendingOtp       = null;   // codice generato
 let pendingUserData  = null;   // dati utente in attesa
+let pendingUserPassword = '';    // solo in memoria fino alla verifica OTP
 let otpExpiry        = null;   // timestamp scadenza
 let otpTimerInterval = null;
 let resendCooldown   = null;
@@ -4132,6 +4303,7 @@ async function handleAuth() {
       currentUser = { email:ADMIN_EMAIL, nome:'Manuel', cognome:'Magnani', role:'admin' };
       localStorage.setItem('fdc_current', JSON.stringify(trimSafeUser(currentUser)));
       localStorage.setItem('fdc_logintime', Date.now());
+      await establishTursoSession(email, pass);
       closeAuth();
       updateNavbar();
       setTimeout(() => showWelcome(currentUser), 400);
@@ -4145,6 +4317,7 @@ async function handleAuth() {
       if (isController) {
         currentUser = { email, nome: email.split('@')[0], cognome: '', role: 'controller' };
         localStorage.setItem('fdc_current', JSON.stringify(currentUser));
+        await establishTursoSession(email, pass);
         closeAuth();
         openControllerMode();
         return;
@@ -4157,6 +4330,7 @@ async function handleAuth() {
       if (isHelper) {
         currentUser = { email, nome: email.split('@')[0], cognome: '', role: 'helper' };
         localStorage.setItem('fdc_current', JSON.stringify(currentUser));
+        await establishTursoSession(email, pass);
         closeAuth();
         openHelperMode();
         return;
@@ -4182,6 +4356,7 @@ async function handleAuth() {
         currentUser = { ...profile, role: 'admin' };
         localStorage.setItem('fdc_current', JSON.stringify(currentUser));
         localStorage.setItem('fdc_logintime', Date.now());
+        await establishTursoSession(email, pass);
         closeAuth(); updateNavbar();
         setTimeout(() => showWelcome(currentUser), 400);
         trackOnline();
@@ -4237,6 +4412,7 @@ async function handleAuth() {
     LOGIN_RATE_LIMIT.reset(email);
     currentUser = trimSafeUser(user);
     localStorage.setItem('fdc_current', JSON.stringify(currentUser));
+    await establishTursoSession(email, pass);
     closeAuth();
     updateNavbar();
     localStorage.setItem('fdc_logintime', Date.now());
@@ -4274,6 +4450,7 @@ async function handleAuth() {
 
     const securePassHash = await hashPassword(pass);
     pendingUserData = { nome: sanitizeInput(nome, 100), cognome: sanitizeInput(cognome, 100), email: sanitizeInput(email, 150), passHash: securePassHash, role:'user', verified:false };
+    pendingUserPassword = pass;
     pendingOtp      = generateOtp();
 
     // Dominio istituzionale → registrazione diretta senza OTP
@@ -4305,7 +4482,8 @@ async function handleAuth() {
       localStorage.setItem('fdc_users', JSON.stringify(users));
       currentUser = trimSafeUser(pendingUserData);
       localStorage.setItem('fdc_current', JSON.stringify(currentUser));
-      pendingOtp = null; pendingUserData = null;
+      await establishTursoSession(email, pass);
+      pendingOtp = null; pendingUserData = null; pendingUserPassword = '';
       closeAuth();
       updateNavbar();
       localStorage.setItem('fdc_logintime', Date.now());
@@ -4346,9 +4524,10 @@ async function handleAuth() {
   } catch(e) { console.error('Errore salvataggio utente:', e); }
   users.push(pendingUserData);
   localStorage.setItem('fdc_users', JSON.stringify(users));
-  currentUser = { ...pendingUserData };
+  currentUser = trimSafeUser(pendingUserData);
   localStorage.setItem('fdc_current', JSON.stringify(currentUser));
-  pendingOtp = null; pendingUserData = null;
+  await establishTursoSession(pendingUserData.email, pendingUserPassword);
+  pendingOtp = null; pendingUserData = null; pendingUserPassword = '';
   closeAuth();
   updateNavbar();
   localStorage.setItem('fdc_logintime', Date.now());
@@ -4357,6 +4536,7 @@ async function handleAuth() {
 }
 
 function logout() {
+  clearTursoSession();
   currentUser = null;
   bookings = [];
   window.isAdmin = false;
@@ -4369,6 +4549,7 @@ function logout() {
 
 function updateNavbar() {
   const right = document.getElementById('navbarRight');
+  if (currentUser && getTursoSessionToken()) setTimeout(startTursoMirrorForCurrentUser, 0);
   if (!currentUser) {
     right.innerHTML = `<button class="btn-nav-login" onclick="openAuth()">🔑 Accedi / Registrati</button>`;
     bookings = [];
@@ -4484,14 +4665,18 @@ function refreshAdminBookings() {
         <td style="color:#6b7280;font-size:.8rem">${b.num||1} pers.</td>
         <td style="color:#9ca3af;font-size:.75rem">${b.userEmail||'—'}</td>
         <td style="font-size:.8rem">${b.note ? `<span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:8px;font-size:.75rem;">💬 ${b.note}</span>` : '<span style="color:#d1d5db;">—</span>'}</td>
-        <td><button onclick="adminDeleteBooking('${docId}',${b.id},${b.num||1})" style="background:#fee2e2;color:#dc2626;border:none;padding:4px 10px;border-radius:8px;cursor:pointer;font-size:.75rem;font-weight:700;">🗑️ Elimina</button></td>
+        <td><button class="admin-delete-booking" onclick="adminDeleteBooking('${docId}',${Number(b.id)||0},${Number(b.num)||1})">🗑️ Elimina prenotazione</button></td>
       </tr>`;
     }).join('');
   }).catch(() => { noEl.textContent='Errore caricamento.'; });
 }
 
 async function adminDeleteBooking(docId, activityId, num) {
-  if (!confirm('Eliminare questa prenotazione?')) return;
+  if (!currentUser || currentUser.role !== 'admin') {
+    showToast('⛔ Operazione riservata agli admin');
+    return;
+  }
+  if (!confirm('Eliminare definitivamente questa prenotazione?')) return;
   try {
     await deleteBookingFromFirebase(docId, activityId, num);
     showToast('🗑️ Prenotazione eliminata');
@@ -4526,6 +4711,12 @@ function refreshAdminActivities() {
             <option value="2" ${a.day==='2'?'selected':''}>3 Settembre</option>
             <option value="3" ${a.day==='3'?'selected':''}>4 Settembre</option>
           </select></div>
+        <div><label class="form-label">Orario</label>
+          <input class="admin-input" id="at_time_${a.id}" value="${escapeHTML(a.time||'')}" placeholder="Es. 15:30 - 16:30"></div>
+        <div><label class="form-label">Posti massimi</label>
+          <input class="admin-input" id="at_max_${a.id}" type="number" min="1" value="${Number(a.max)||15}"></div>
+        <div style="grid-column:1/-1"><label class="form-label">Luogo</label>
+          <input class="admin-input" id="at_location_${a.id}" value="${escapeHTML(a.location||'')}" placeholder="Luogo dell'attività"></div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn-save" onclick="saveActivity(${a.id})">💾 Salva</button>
@@ -4536,16 +4727,23 @@ function refreshAdminActivities() {
 }
 
 function saveActivity(id) {
-  const a = activities.find(x=>x.id===id);
+  id = Number(id);
+  const a = activities.find(x=>Number(x.id)===id);
   if(!a) return;
   const t = document.getElementById('at_title_'+id)?.value.trim();
   const e = document.getElementById('at_emoji_'+id)?.value.trim();
   const c = document.getElementById('at_cat_'+id)?.value.trim();
   const d = document.getElementById('at_day_'+id)?.value;
+  const tm = document.getElementById('at_time_'+id)?.value.trim();
+  const mx = Number(document.getElementById('at_max_'+id)?.value);
+  const loc = document.getElementById('at_location_'+id)?.value.trim();
   if(t) a.title=t;
   if(e) a.emoji=e;
   if(c) a.cat=c;
   if(d) a.day=d;
+  a.time = tm || '';
+  if(Number.isFinite(mx) && mx > 0) a.max = mx;
+  a.location = loc || undefined;
   renderActivities(currentFilter);
   renderSportGrid();
   refreshAdminActivities();
@@ -4566,8 +4764,9 @@ function resetActivityCount(id) {
 }
 
 function deleteActivity(id) {
+  id = Number(id);
   if(!confirm('Eliminare definitivamente questa attività? I posti prenotati NON verranno cancellati automaticamente.')) return;
-  const idx = activities.findIndex(x=>x.id===id);
+  const idx = activities.findIndex(x=>Number(x.id)===id);
   if(idx===-1) return;
   activities.splice(idx,1);
   delete counts[id];
@@ -4845,20 +5044,23 @@ function applyInfoScuola() {
   saveSiteSettings({texts}).then(ok => showToast(ok?'✅ Info scuola aggiornate per tutti!':'⚠️ Aggiornate solo qui'));
 }
 
-function addNewActivity() {
-  const title = document.getElementById('newActTitle').value.trim();
-  const emoji = document.getElementById('newActEmoji').value.trim();
-  const cat   = document.getElementById('newActCat').value.trim();
-  const day   = document.getElementById('newActDay').value;
-  const theme = document.getElementById('newActTheme').value;
+function addNewActivity(suffix = '') {
+  const get = name => document.getElementById(name + suffix);
+  const title = get('newActTitle')?.value.trim() || '';
+  const emoji = get('newActEmoji')?.value.trim() || '';
+  const cat   = get('newActCat')?.value.trim() || '';
+  const day   = get('newActDay')?.value || '1';
+  const theme = get('newActTheme')?.value || 'mente';
   if (!title || !emoji) { showToast('⚠️ Inserisci almeno titolo ed emoji'); return; }
-  const newId = Math.max(...activities.map(a=>a.id)) + 1;
-  activities.push({ id:newId, day, title, emoji, cat:cat||'Attività', theme });
+  const newId = Math.max(0, ...activities.map(a=>Number(a.id) || 0)) + 1;
+  activities.push({ id:newId, day, time:'', title, emoji, cat:cat||'Attività', theme, max:15 });
   counts[newId] = 0;
-  document.getElementById('newActTitle').value='';
-  document.getElementById('newActEmoji').value='';
-  document.getElementById('newActCat').value='';
+  get('newActTitle').value='';
+  get('newActEmoji').value='';
+  get('newActCat').value='';
   renderActivities(currentFilter);
+  renderSportGrid();
+  refreshAdminActivities();
   saveActivitiesToFirestore().then(ok => {
     showToast(ok ? `✅ Attività "${title}" aggiunta per tutti!` : `⚠️ "${title}" aggiunta solo qui`);
   });
@@ -5003,6 +5205,7 @@ function showControllerPanel() {
 }
 
 function controllerLogout() {
+  clearTursoSession();
   currentUser = null;
   localStorage.removeItem('fdc_current');
   document.getElementById('controllerOverlay').style.display = 'none';
@@ -5150,11 +5353,13 @@ async function joinWaitlist(activityId) {
   const wRef = db.collection('waitlist').doc(activityId+'_'+currentUser.email);
   const exists = await wRef.get();
   if (exists.exists) { showToast('ℹ️ Sei già in lista d\'attesa!'); return; }
-  await wRef.set({
+  const waitlistData = {
     activityId, userEmail: currentUser.email,
     nome: currentUser.nome, cognome: currentUser.cognome,
     timestamp: firebase.firestore.FieldValue.serverTimestamp()
-  });
+  };
+  await wRef.set(waitlistData);
+  wRef.get().then(doc => tursoMirrorPut('waitlist', wRef.id, doc.data() || waitlistData)).catch(() => {});
   showToast('📋 Aggiunto alla lista d\'attesa!');
 }
 
@@ -5542,11 +5747,15 @@ loadIntroData();
 renderSportGrid();
 loadPrenotaTexts();
 initSettingsToggles();
-// Carica attività da Turso (sovrascrive i dati locali con quelli dal database)
-loadActivitiesFromTurso().then(ok => {
-  if (ok) console.log('✅ Attività caricate da Turso');
-  else console.log('ℹ️ Uso attività locali (Turso non disponibile)');
-});
+// Firebase è la fonte primaria; Turso interviene come fallback senza sovrascrivere dati più recenti.
+setTimeout(() => {
+  if (!firestoreActivitiesLoaded) {
+    loadActivitiesFromTurso().then(ok => {
+      if (ok) console.log('✅ Attività recuperate dal fallback Turso');
+      else console.log('ℹ️ Uso attività locali (Firebase/Turso non disponibili)');
+    });
+  }
+}, 1800);
 // Re-render sport grid dopo che Firebase ha caricato i dati
 setTimeout(() => { loadIntroData(); renderSportGrid(); }, 1500);
 
@@ -5963,6 +6172,7 @@ function controlloClose() {
 }
 function controlloLogout() {
   ctrlStopCamera();
+  clearTursoSession();
   currentUser = null;
   localStorage.removeItem('fdc_current');
   document.getElementById('controlloOverlay').style.display = 'none';
@@ -6305,6 +6515,7 @@ function openHelperMode() {
 }
 
 function helperLogout() {
+  clearTursoSession();
   currentUser = null;
   localStorage.removeItem('fdc_current');
   document.getElementById('helperOverlay').style.display = 'none';
@@ -6511,11 +6722,13 @@ async function publishAnnuncio() {
   const type  = document.getElementById('newAnnType').value;
   if (!title || !body) { showToast('⚠️ Inserisci titolo e testo'); return; }
   try {
-    await db.collection('annunci').add({
+    const announcementData = {
       title, body, emoji, type,
       author: currentUser.nome + ' ' + currentUser.cognome,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    };
+    const announcementRef = await db.collection('annunci').add(announcementData);
+    announcementRef.get().then(doc => tursoMirrorPut('annunci', announcementRef.id, doc.data() || announcementData)).catch(() => {});
     document.getElementById('newAnnTitle').value = '';
     document.getElementById('newAnnBody').value  = '';
     document.getElementById('newAnnEmoji').value = '📢';
@@ -6530,7 +6743,10 @@ async function publishAnnuncio() {
 async function deleteAnnuncio(docId) {
   if (!confirm('Eliminare questo annuncio?')) return;
   try {
-    await db.collection('annunci').doc(docId).delete();
+    const announcementRef = db.collection('annunci').doc(docId);
+    const previous = await announcementRef.get();
+    await announcementRef.delete();
+    tursoMirrorDelete('annunci', docId, previous.exists ? previous.data() : {}).catch(() => {});
     showToast('🗑️ Annuncio eliminato');
     refreshAdminAnnunci();
     renderAnnunci();
@@ -6768,8 +6984,13 @@ async function toggleHype(actId) {
   if(hcEl) hcEl.textContent = fdcHype[actId]||'';
   var btn = document.querySelector('[onclick="toggleHype('+actId+')"]');
   if(btn) { btn.classList.toggle('hyped',!was); btn.childNodes[0].textContent=(!was?'❤️':'🤍')+' '; }
-  // sync Firebase
-  try { await db.collection('hype').doc(String(actId)).set({count: firebase.firestore.FieldValue.increment(was?-1:1)},{merge:true}); } catch(e){}
+  // Sync Firebase + mirror Turso
+  try {
+    const hypeRef = db.collection('hype').doc(String(actId));
+    await hypeRef.set({count: firebase.firestore.FieldValue.increment(was?-1:1)},{merge:true});
+    const hypeDoc = await hypeRef.get();
+    tursoMirrorPut('hype', String(actId), hypeDoc.data() || {count:fdcHype[actId]||0}).catch(() => {});
+  } catch(e){}
 }
 
 loadHype();
@@ -6867,13 +7088,16 @@ async function sendChat() {
   if(!text) return;
   inp.value='';
   try {
-    await db.collection('chats').doc(String(fdcChatActId))
-      .collection('messages').add({
-        text: text,
-        nome: currentUser.nome+' '+currentUser.cognome,
-        email: currentUser.email,
-        ts: firebase.firestore.FieldValue.serverTimestamp()
-      });
+    const chatPath = 'chats/' + String(fdcChatActId) + '/messages';
+    const chatData = {
+      text: text,
+      nome: currentUser.nome+' '+currentUser.cognome,
+      email: currentUser.email,
+      ts: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    const chatRef = await db.collection('chats').doc(String(fdcChatActId))
+      .collection('messages').add(chatData);
+    chatRef.get().then(doc => tursoMirrorPut(chatPath, chatRef.id, doc.data() || chatData)).catch(() => {});
   } catch(e){ showToast('❌ Errore invio messaggio'); }
 }
 
@@ -7094,13 +7318,15 @@ async function sendWT() {
   if (!text) return;
   inp.value = '';
   try {
-    await db.collection('staffradio').add({
+    const radioData = {
       text: text,
       nome: currentUser.nome + ' ' + (currentUser.cognome || ''),
       email: currentUser.email,
       role: currentUser.role,
       ts: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    };
+    const radioRef = await db.collection('staffradio').add(radioData);
+    radioRef.get().then(doc => tursoMirrorPut('staffradio', radioRef.id, doc.data() || radioData)).catch(() => {});
   } catch(e) { showToast('❌ Errore invio'); }
 }
 
@@ -7437,5 +7663,5 @@ function openCookiePrefs(){
 }
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a309e5e8abf25183',t:'MTc4NzY1MzU4Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
