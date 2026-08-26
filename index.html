@@ -1323,6 +1323,7 @@ body.dark .cookie-pref-row { border-color:#3d2a6e; }
 @keyframes premiumHeroIn { from{opacity:0;transform:translate3d(0,18px,0)} to{opacity:1;transform:translate3d(0,0,0)} }
 @keyframes premiumGlowDrift { 0%,100%{transform:translate3d(0,0,0) scale(1)} 50%{transform:translate3d(12px,8px,0) scale(1.04)} }
 @keyframes premiumSheen { 0%{transform:translateX(-140%) skewX(-18deg)} 100%{transform:translateX(240%) skewX(-18deg)} }
+@keyframes premiumPageFade { from{opacity:0} to{opacity:1} }
 
 /* Il contenuto resta visibile anche se JavaScript non dovesse partire. */
 body.motion-ready:not(.no-anim) .motion-pending { opacity:0;transform:translate3d(0,22px,0) scale(.985);filter:blur(3px) }
@@ -1349,7 +1350,8 @@ body:not(.no-anim) .hero::after { animation:premiumGlowDrift 13s 1.2s ease-in-ou
 body:not(.no-anim) .book-btn:hover::before,body:not(.no-anim) .prenota-cta:hover::before,body:not(.no-anim) .btn-nav-login:hover::before,body:not(.no-anim) .btn-nav-admin:hover::before,body:not(.no-anim) .btn-save:hover::before,body:not(.no-anim) .sport-card-btn:hover::before,body:not(.no-anim) .bookings-btn:hover::before { animation:premiumSheen .8s ease both }
 
 /* Cambio pagina e scheda amministrativa più naturale. */
-body:not(.no-anim) .page.active { animation:premiumReveal .5s cubic-bezier(.22,1,.36,1) both }
+/* Solo opacità sulla pagina: niente transform, perché i popup fixed sono figli della pagina Programma. */
+body:not(.no-anim) .page.active { animation:premiumPageFade .42s ease both }
 body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-bezier(.22,1,.36,1) both }
 
 /* Accessibilità: rispetta sempre le preferenze del dispositivo. */
@@ -2677,7 +2679,7 @@ body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-be
       <div class="chisiamo-card chisiamo-card-accent">
         <div class="chisiamo-icon-badge">📧</div>
         <div class="chisiamo-card-title">Contatti</div>
-        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#7a19081f1b0e0e130c130e1b1713081b171b081f3a1d171b131654191517" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
+        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#81e2f3e4e0f5f5e8f7e8f5e0ece8f3e0ece0f3e4c1e6ece0e8edafe2eeec" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
       </div>
     </div>
 
@@ -3893,12 +3895,33 @@ function openModal(id) {
     setTimeout(() => openAuth(), 500);
     return;
   }
-  currentAct = activities.find(a=>a.id===id);
+
+  const numericId = Number(id);
+  currentAct = activities.find(a => Number(a.id) === numericId);
+  if (!currentAct) {
+    showToast('⚠️ Attività non trovata — aggiorna la pagina');
+    console.warn('Popup prenotazione: attività non trovata', id);
+    return;
+  }
   if (currentAct.phoneOnly) {
     showToast('📞 Laboratorio di Cinema: prenotazione solo telefonica al ' + (currentAct.phoneNumber||'339 128 7178'));
     return;
   }
-  if (counts[currentAct.id] >= capFor(currentAct)) return;
+  if (Number(counts[currentAct.id] || 0) >= capFor(currentAct)) {
+    showToast('📋 Attività completa — puoi usare la lista d’attesa');
+    return;
+  }
+
+  const overlay = document.getElementById('modalOverlay');
+  if (!overlay) {
+    showToast('⚠️ Impossibile aprire la prenotazione — aggiorna la pagina');
+    console.error('Popup prenotazione: modalOverlay mancante');
+    return;
+  }
+  // Il popup nasce dentro page-programma. Spostarlo direttamente nel body evita
+  // che animazioni/transform della pagina lo posizionino fuori dallo schermo.
+  if (overlay.parentElement !== document.body) document.body.appendChild(overlay);
+
   document.getElementById('modalEmoji').textContent = currentAct.emoji;
   document.getElementById('modalEmoji').style.display = 'block';
   const img = document.getElementById('modalHeaderImg');
@@ -3914,9 +3937,16 @@ function openModal(id) {
   document.getElementById('fNote').value='';
   const acc=document.getElementById('fAccompagnato'); if(acc) acc.value='';
   document.getElementById('fOrario').value = currentAct.time || '';
-  document.getElementById('modalOverlay').classList.add('open');
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('fNome')?.focus(), 180);
 }
-function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); currentAct=null; }
+function closeModal() {
+  const overlay = document.getElementById('modalOverlay');
+  if (overlay) overlay.classList.remove('open');
+  document.body.style.overflow = '';
+  currentAct = null;
+}
 
 async function confirmBooking() {
   const nome   = document.getElementById('fNome').value.trim();
