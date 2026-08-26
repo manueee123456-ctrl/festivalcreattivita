@@ -1315,6 +1315,52 @@ body.dark .cookie-prefs { background:#2e1065; color:#c084fc; }
 body.dark .cookie-pref-row label { color:#e8e0ff; }
 body.dark .cookie-pref-row { border-color:#3d2a6e; }
 
+/* =========================================================
+   PREMIUM MOTION SYSTEM — animazioni sobrie, fluide e coerenti
+   ========================================================= */
+@keyframes premiumReveal { from{opacity:0;transform:translate3d(0,22px,0) scale(.985);filter:blur(3px)} to{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)} }
+@keyframes premiumRevealLeft { from{opacity:0;transform:translate3d(-24px,0,0)} to{opacity:1;transform:translate3d(0,0,0)} }
+@keyframes premiumHeroIn { from{opacity:0;transform:translate3d(0,18px,0)} to{opacity:1;transform:translate3d(0,0,0)} }
+@keyframes premiumGlowDrift { 0%,100%{transform:translate3d(0,0,0) scale(1)} 50%{transform:translate3d(12px,8px,0) scale(1.04)} }
+@keyframes premiumSheen { 0%{transform:translateX(-140%) skewX(-18deg)} 100%{transform:translateX(240%) skewX(-18deg)} }
+
+/* Il contenuto resta visibile anche se JavaScript non dovesse partire. */
+body.motion-ready:not(.no-anim) .motion-pending { opacity:0;transform:translate3d(0,22px,0) scale(.985);filter:blur(3px) }
+body.motion-ready:not(.no-anim) .motion-pending.motion-left { transform:translate3d(-24px,0,0);filter:none }
+body.motion-ready:not(.no-anim) .motion-visible { animation:premiumReveal .72s cubic-bezier(.22,1,.36,1) both;animation-delay:var(--motion-delay,0ms);will-change:transform,opacity }
+body.motion-ready:not(.no-anim) .motion-visible.motion-left { animation-name:premiumRevealLeft }
+
+/* Entrata iniziale della testata. */
+body:not(.no-anim) .hero .festival-tag { animation:premiumHeroIn .65s .08s cubic-bezier(.22,1,.36,1) both }
+body:not(.no-anim) .hero h1 { animation:premiumHeroIn .8s .16s cubic-bezier(.22,1,.36,1) both }
+body:not(.no-anim) .hero .hero-sub { animation:premiumHeroIn .75s .24s cubic-bezier(.22,1,.36,1) both }
+body:not(.no-anim) .hero .hero-desc { animation:premiumHeroIn .75s .31s cubic-bezier(.22,1,.36,1) both }
+body:not(.no-anim) .hero .hero-dates { animation:premiumHeroIn .75s .38s cubic-bezier(.22,1,.36,1) both }
+body:not(.no-anim) .hero::before { animation:premiumGlowDrift 11s ease-in-out infinite }
+body:not(.no-anim) .hero::after { animation:premiumGlowDrift 13s 1.2s ease-in-out infinite reverse }
+
+/* Micro-interazioni: profondità senza effetti vistosi. */
+.sponsor-card,.open-events-card,.prenota-step,.chisiamo-card,.annunci-card,.stat-card,.panel-item,.bs-card { transition:transform .38s cubic-bezier(.22,1,.36,1),box-shadow .38s ease,border-color .3s ease,background-color .3s ease;transform-origin:center }
+.sponsor-card:hover,.open-events-card:hover,.prenota-step:hover,.chisiamo-card:hover,.annunci-card:hover,.stat-card:hover { transform:translateY(-5px);box-shadow:0 18px 38px rgba(76,29,149,.13) }
+
+/* Riflesso leggero sui principali pulsanti colorati. */
+.book-btn,.prenota-cta,.btn-nav-login,.btn-nav-admin,.btn-save,.sport-card-btn,.bookings-btn { isolation:isolate;position:relative;overflow:hidden }
+.book-btn::before,.prenota-cta::before,.btn-nav-login::before,.btn-nav-admin::before,.btn-save::before,.sport-card-btn::before,.bookings-btn::before { content:'';position:absolute;inset:-35% auto -35% -45%;width:30%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.34),transparent);transform:translateX(-140%) skewX(-18deg);pointer-events:none;z-index:2 }
+body:not(.no-anim) .book-btn:hover::before,body:not(.no-anim) .prenota-cta:hover::before,body:not(.no-anim) .btn-nav-login:hover::before,body:not(.no-anim) .btn-nav-admin:hover::before,body:not(.no-anim) .btn-save:hover::before,body:not(.no-anim) .sport-card-btn:hover::before,body:not(.no-anim) .bookings-btn:hover::before { animation:premiumSheen .8s ease both }
+
+/* Cambio pagina e scheda amministrativa più naturale. */
+body:not(.no-anim) .page.active { animation:premiumReveal .5s cubic-bezier(.22,1,.36,1) both }
+body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-bezier(.22,1,.36,1) both }
+
+/* Accessibilità: rispetta sempre le preferenze del dispositivo. */
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important }
+  .motion-pending { opacity:1!important;transform:none!important;filter:none!important }
+}
+@media (hover:none) {
+  .sponsor-card:hover,.open-events-card:hover,.prenota-step:hover,.chisiamo-card:hover,.annunci-card:hover,.stat-card:hover { transform:none;box-shadow:inherit }
+}
+
 </style>
 <body>
 
@@ -2631,7 +2677,7 @@ body.dark .cookie-pref-row { border-color:#3d2a6e; }
       <div class="chisiamo-card chisiamo-card-accent">
         <div class="chisiamo-icon-badge">📧</div>
         <div class="chisiamo-card-title">Contatti</div>
-        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#2142534440555548574855404c4853404c40534461464c40484d0f424e4c" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
+        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#7a19081f1b0e0e130c130e1b1713081b171b081f3a1d171b131654191517" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
       </div>
     </div>
 
@@ -4628,8 +4674,10 @@ function closeAdmin() { document.getElementById('adminOverlay').classList.remove
 function adminTab(name, btn) {
   document.querySelectorAll('.admin-section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.admin-nav-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('sec-'+name).classList.add('active');
+  const activeAdminSection = document.getElementById('sec-'+name);
+  activeAdminSection.classList.add('active');
   btn.classList.add('active');
+  if (typeof schedulePremiumMotionScan === 'function') schedulePremiumMotionScan(activeAdminSection);
   if (name==='dashboard') refreshAdminDashboard();
   if (name==='prenotazioni') refreshAdminBookings();
   if (name==='attivita') refreshAdminActivities();
@@ -5758,6 +5806,17 @@ function switchPage(name) {
 })();
 
 // Init
+// Prima di creare menu e listener, elimina subito un eventuale profilo locale
+// rimasto nel browser con sessione server già scaduta. Così non partono 401.
+if (currentUser && !getTursoSessionToken()) {
+  currentUser = null;
+  bookings = [];
+  window.isAdmin = false;
+  localStorage.removeItem('fdc_current');
+  setTimeout(() => showToast('⏱ Sessione scaduta — accedi di nuovo'), 300);
+}
+// Avvio animazioni al termine dello script, quando tutte le costanti sono pronte.
+setTimeout(initPremiumMotion, 0);
 updateNavbar();
 listenCounts();
 renderActivities('all');
@@ -5887,22 +5946,115 @@ async function sendEmailBlast() {
 }
 
 // ==================== ANALYTICS ====================
-let trackOnlineTimer = null;
+// "var" è intenzionale: esiste già in sicurezza anche se una vecchia sessione
+// deve essere chiusa durante l'avvio. Senza assegnazione qui non azzera un timer
+// eventualmente avviato poco prima durante l'inizializzazione della pagina.
+var trackOnlineTimer;
 function trackOnline() {
-  if (!currentUser) return;
+  if (!currentUser || !getTursoSessionToken()) return;
   const uid = currentUser.email;
-  onlineRef.set({ [uid]: { email: uid, nome: currentUser.nome, ts: Date.now() } }, { merge: true });
-  // Cleanup ogni 2 min (un solo timer, fermato al logout)
+  const onlinePayload = () => ({ [uid]: { email: uid, nome: currentUser?.nome || '', ts: Date.now() } });
+
+  // Non lasciare Promise non gestite se la sessione scade durante il ping.
+  onlineRef.set(onlinePayload(), { merge: true }).catch(err => {
+    if (!(err && err.sessionExpired)) console.warn('Stato online non aggiornato:', err);
+  });
+
+  // Aggiornamento ogni 2 min (un solo timer, fermato al logout/scadenza).
   if (trackOnlineTimer) clearInterval(trackOnlineTimer);
   trackOnlineTimer = setInterval(() => {
-    if (!currentUser) return;
-    onlineRef.set({ [uid]: { email: uid, nome: currentUser.nome, ts: Date.now() } }, { merge: true });
+    if (!currentUser || !getTursoSessionToken()) {
+      clearInterval(trackOnlineTimer);
+      trackOnlineTimer = null;
+      return;
+    }
+    onlineRef.set(onlinePayload(), { merge: true }).catch(err => {
+      if (!(err && err.sessionExpired)) console.warn('Stato online non aggiornato:', err);
+    });
   }, 120000);
-  // Rimuovi al logout
+
+  // La rimozione è informativa: un errore non deve mai bloccare l'uscita.
   window.addEventListener('beforeunload', () => {
-    if (!currentUser) return;
-    onlineRef.update({ [uid]: DB_FIELD_VALUE.delete() });
+    if (!currentUser || !getTursoSessionToken()) return;
+    onlineRef.update({ [uid]: DB_FIELD_VALUE.delete() }).catch(() => {});
+  }, { once:true });
+}
+
+// ==================== PREMIUM MOTION SYSTEM ====================
+// Anima anche contenuti aggiunti successivamente (annunci, sponsor, pannello admin)
+// senza ricalcoli continui e senza interferire con pulsanti o database.
+const PREMIUM_MOTION_SELECTOR = [
+  '.open-events-card', '.prenota-step', '.sport-card', '.chisiamo-card',
+  '.sponsor-card', '.annunci-card', '.stat-card', '.admin-card',
+  '.day-label', '.filters-section > h2', '.search-bar', '.cat-filters',
+  '.prenota-section > h2', '.sport-section > h2', '.chisiamo-desc',
+  '.sponsor-section > h2', '.annunci-section > h2', '.timeline-item',
+  '.panel-item', '.admin-table-wrap', '.setting-row', '.cookie-pref-row'
+].join(',');
+
+let premiumMotionObserver = null;
+let premiumMutationObserver = null;
+let premiumMotionFrame = 0;
+
+function revealMotionElement(el) {
+  if (!el || el.classList.contains('motion-visible')) return;
+  el.classList.remove('motion-pending');
+  el.classList.add('motion-visible');
+  if (premiumMotionObserver) premiumMotionObserver.unobserve(el);
+  // Libera will-change dopo l'animazione per mantenere il sito leggero.
+  setTimeout(() => { if (el) el.style.willChange = 'auto'; }, 1100);
+}
+
+function scanPremiumMotion(root) {
+  if (!root || !root.querySelectorAll) return;
+  const elements = [];
+  if (root.matches && root.matches(PREMIUM_MOTION_SELECTOR)) elements.push(root);
+  root.querySelectorAll(PREMIUM_MOTION_SELECTOR).forEach(el => elements.push(el));
+  elements.forEach((el, index) => {
+    if (el.dataset.motionReady === '1') return;
+    el.dataset.motionReady = '1';
+    el.classList.add('motion-pending');
+    // Ritardo breve e limitato: crea ritmo senza rallentare pagine lunghe.
+    el.style.setProperty('--motion-delay', Math.min(index % 6, 5) * 55 + 'ms');
+    if (el.classList.contains('day-label') || el.classList.contains('timeline-item')) el.classList.add('motion-left');
+    if (premiumMotionObserver) premiumMotionObserver.observe(el);
+    else revealMotionElement(el);
   });
+}
+
+function schedulePremiumMotionScan(root) {
+  if (premiumMotionFrame) cancelAnimationFrame(premiumMotionFrame);
+  premiumMotionFrame = requestAnimationFrame(() => {
+    premiumMotionFrame = 0;
+    scanPremiumMotion(root || document);
+  });
+}
+
+function initPremiumMotion() {
+  if (document.body.dataset.premiumMotion === '1') return;
+  document.body.dataset.premiumMotion = '1';
+  document.body.classList.add('motion-ready');
+
+  if ('IntersectionObserver' in window) {
+    premiumMotionObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) revealMotionElement(entry.target);
+      });
+    }, { rootMargin:'0px 0px -7% 0px', threshold:.08 });
+  }
+  scanPremiumMotion(document);
+
+  // Un solo osservatore leggero per i contenuti creati dinamicamente.
+  if ('MutationObserver' in window) {
+    premiumMutationObserver = new MutationObserver(mutations => {
+      let needsScan = false;
+      for (const mutation of mutations) {
+        if (mutation.addedNodes && mutation.addedNodes.length) { needsScan = true; break; }
+      }
+      if (needsScan) schedulePremiumMotionScan(document.querySelector('.page.active') || document);
+    });
+    premiumMutationObserver.observe(document.body, { childList:true, subtree:true });
+  }
 }
 
 function applyAnimMode() {
@@ -7686,5 +7838,29 @@ function openCookiePrefs(){
 }
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a311a25aaa73edc7',t:'MTc4NzczNDcwMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
+</html>
+open'); // mostra direttamente le opzioni
+}
+</script>
+
+</body>
+</html>
+="cookie-fab" onclick="openCookiePrefs()" title="Preferenze cookie" aria-label="Preferenze cookie">🍪<span>&nbsp;Cookie</span></button>
+
+<script>
+function openCookiePrefs(){
+  document.getElementById('cookieOverlay').classList.add('open');
+  const panel = document.getElementById('cookiePrefPanel');
+  if(panel) panel.classList.add('open'); // mostra direttamente le opzioni
+}
+</script>
+
+</body>
+</html>
+open'); // mostra direttamente le opzioni
+}
+</script>
+
+</body>
 </html>
