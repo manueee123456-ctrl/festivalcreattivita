@@ -395,6 +395,20 @@ function bearerToken(headers = {}) {
   return auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
 }
 
+// Durata della sessione: legge l'impostazione "Scadenza sessione (ore)" dal sito
+// (settings/site.sessionHours), con valore predefinito 24 ore.
+const SESSION_DEFAULT_MS = 24 * 60 * 60 * 1000;
+const SESSION_RENEW_WINDOW_MS = 2 * 60 * 60 * 1000;
+
+async function sessionTtlMs() {
+  try {
+    const site = await getAppDocument('settings', 'site');
+    const hours = Number(site && site.data && site.data.sessionHours);
+    if (Number.isFinite(hours) && hours >= 1) return Math.min(168, hours) * 60 * 60 * 1000;
+  } catch {}
+  return SESSION_DEFAULT_MS;
+}
+
 async function createSession(email, password) {
   email = String(email || '').trim().toLowerCase();
   password = String(password || '');
@@ -424,7 +438,7 @@ async function createSession(email, password) {
   if (!matched) throw new Error('Credenziali non valide');
 
   const now = Date.now();
-  const payload = { email, role: matched.role, iat: now, exp: now + 12 * 60 * 60 * 1000 };
+  const payload = { email, role: matched.role, iat: now, exp: now + (await sessionTtlMs()) };
   return { token: signSession(payload), user: { email, role: matched.role }, expiresAt: payload.exp };
 }
 
@@ -757,11 +771,19 @@ async function deleteBooking(session, docId) {
   return { docId, activityId: Number(activityId), total: Number(count?.data?.total) || 0 };
 }
 
-async function handleAction(body, event) {
+async function handleAction(body, session) {
   const action = String(body?.action || 'health');
-  const session = verifySession(bearerToken(event.headers));
 
   if (action === 'session') return { ok: true, ...(await createSession(body.email, body.password)) };
+
+  // Rinnovo sessione: chi ha ancora una sessione valida riceve un token nuovo
+  // (scadenza spostata in avanti), senza dover reinserire email e password.
+  if (action === 'session:renew') {
+    if (!session) return { __status: 401, ok: false, error: 'Sessione scaduta o non valida' };
+    const now = Date.now();
+    const payload = { email: session.email, role: session.role, iat: now, exp: now + (await sessionTtlMs()) };
+    return { ok: true, token: signSession(payload), user: { email: session.email, role: session.role }, expiresAt: payload.exp };
+  }
 
   await ensureSchema();
 
@@ -814,6 +836,8 @@ async function handleAction(body, event) {
       if (['posti_esauriti', 'prenotazione_duplicata'].includes(error.message)) {
         return { __status: 409, ok: false, error: error.message };
       }
+      if (error.message === 'Accesso richiesto') return { __status: 401, ok: false, error: 'Sessione scaduta o non valida' };
+      if (error.message === 'Prenotazione non autorizzata') return { __status: 403, ok: false, error: error.message };
       throw error;
     }
   }
@@ -823,6 +847,7 @@ async function handleAction(body, event) {
       const result = await deleteBooking(session, body.docId);
       return { ok: true, ...result };
     } catch (error) {
+      if (error.message === 'Accesso richiesto') return { __status: 401, ok: false, error: 'Sessione scaduta o non valida' };
       if (/non trovata|non autorizzata/.test(error.message)) return { __status: 403, ok: false, error: error.message };
       throw error;
     }
@@ -831,7 +856,10 @@ async function handleAction(body, event) {
   if (action === 'documents:get') {
     const path = normalizePath(body.collectionPath);
     const docId = normalizeDocId(body.docId);
-    if (!canReadCollection(session, path)) return { __status: 403, ok: false, error: 'Lettura non autorizzata' };
+    if (!canReadCollection(session, path)) {
+      if (!session) return { __status: 401, ok: false, error: 'Sessione scaduta o non valida' };
+      return { __status: 403, ok: false, error: 'Lettura non autorizzata' };
+    }
     const record = await getAppDocument(path, docId);
     const readable = record ? filterReadableRecords(session, path, [record]) : [];
     return { ok: true, record: sanitizeRecordForClient(path, readable[0] || null, session) };
@@ -839,7 +867,10 @@ async function handleAction(body, event) {
 
   if (action === 'documents:query') {
     const path = normalizePath(body.collectionPath);
-    if (!canReadCollection(session, path)) return { __status: 403, ok: false, error: 'Lettura non autorizzata' };
+    if (!canReadCollection(session, path)) {
+      if (!session) return { __status: 401, ok: false, error: 'Sessione scaduta o non valida' };
+      return { __status: 403, ok: false, error: 'Lettura non autorizzata' };
+    }
     let records = await listAppDocuments(path);
     records = filterReadableRecords(session, path, records);
     records = applyQuery(records, body.filters || [], body.orderBy || [], body.limit || 0);
@@ -850,7 +881,7 @@ async function handleAction(body, event) {
     const path = normalizePath(body.collectionPath);
     const docId = normalizeDocId(body.docId);
     const input = body.data && typeof body.data === 'object' ? body.data : {};
-    if (!session) return { __status: 403, ok: false, error: 'Accesso richiesto' };
+    if (!session) return { __status: 401, ok: false, error: 'Sessione scaduta o non valida' };
     const existing = await getAppDocument(path, docId, true);
     const authData = body.merge && existing?.data ? deepMerge(existing.data, input) : input;
     if (!canWriteDocument(session, path, docId, authData)) return { __status: 403, ok: false, error: 'Scrittura non autorizzata' };
@@ -947,9 +978,21 @@ export async function handler(event) {
   catch { return response(400, { ok: false, error: 'JSON non valido' }); }
 
   try {
-    const result = await handleAction(body, event);
+    const session = verifySession(bearerToken(event.headers));
+    const result = await handleAction(body, session);
     const status = result.__status || 200;
     if ('__status' in result) delete result.__status;
+    // Rinnovo automatico: se la sessione sta per scadere (meno di 2 ore),
+    // allega alle risposte riuscite un token nuovo così l'utente resta connesso.
+    if (
+      session && result && result.ok !== false && result.token === undefined &&
+      Number(session.exp) - Date.now() < SESSION_RENEW_WINDOW_MS
+    ) {
+      try {
+        const now = Date.now();
+        result.token = signSession({ email: session.email, role: session.role, iat: now, exp: now + (await sessionTtlMs()) });
+      } catch {}
+    }
     return response(status, result);
   } catch (error) {
     console.error('Turso function error:', error?.message || error);
