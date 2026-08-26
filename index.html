@@ -7,6 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Festival della Didattica Creativa</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎨</text></svg>">
 <meta name="description" content="Il Festival della Didattica Creativa: tre giorni di esperienze straordinarie per ragazzi tra sport, arte, natura, cucina e teatro. Prenota la tua attività.">
 <meta name="keywords" content="festival della didattica creativa, gruppo creattività, festival creattività, FDC, Miramare, Rimini">
 <meta name="google-site-verification" content="a7175b6037c9693c" />
@@ -2630,7 +2631,7 @@ body.dark .cookie-pref-row { border-color:#3d2a6e; }
       <div class="chisiamo-card chisiamo-card-accent">
         <div class="chisiamo-icon-badge">📧</div>
         <div class="chisiamo-card-title">Contatti</div>
-        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#680b1a0d091c1c011e011c0905011a0905091a0d4e4b5e5c530f05090104460b0705" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
+        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#2142534440555548574855404c4853404c40534461464c40484d0f424e4c" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
       </div>
     </div>
 
@@ -2996,6 +2997,8 @@ class TursoQuery {
         }
       } catch (error) {
         if (onError) onError(error);
+        // Sessione scaduta: ferma il listener invece di ripetere richieste che falliscono
+        if (error && error.sessionExpired) { active = false; if (timer) clearTimeout(timer); return; }
       } finally {
         running = false;
         if (active) timer = setTimeout(poll, TURSO_POLL_MS);
@@ -3076,6 +3079,8 @@ class TursoDocumentReference {
         }
       } catch (error) {
         if (onError) onError(error);
+        // Sessione scaduta: ferma il listener invece di ripetere richieste che falliscono
+        if (error && error.sessionExpired) { active = false; if (timer) clearTimeout(timer); return; }
       } finally {
         running = false;
         if (active) timer = setTimeout(poll, TURSO_DOCUMENT_POLL_MS);
@@ -3119,19 +3124,70 @@ const TURSO_API = '/.netlify/functions/turso';
 const TURSO_SESSION_KEY = 'fdc_turso_session';
 let lastActivitiesSignature = '';
 
+function tursoSessionPayload(token) {
+  try {
+    const encoded = String(token || '').split('.')[0];
+    if (!encoded) return null;
+    const b64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    const json = decodeURIComponent(atob(b64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    const payload = JSON.parse(json);
+    return (payload && typeof payload === 'object') ? payload : null;
+  } catch (e) { return null; }
+}
+
 function getTursoSessionToken() {
-  return localStorage.getItem(TURSO_SESSION_KEY) || '';
+  const token = localStorage.getItem(TURSO_SESSION_KEY) || '';
+  if (!token) return '';
+  // Se la sessione è scaduta la rimuove subito, invece di continuare a
+  // inviarla ricevendo errori 403 in eterno.
+  const payload = tursoSessionPayload(token);
+  if (!payload || !Number(payload.exp) || Number(payload.exp) <= Date.now() + 30000) {
+    localStorage.removeItem(TURSO_SESSION_KEY);
+    return '';
+  }
+  return token;
 }
 
 function clearTursoSession() {
   localStorage.removeItem(TURSO_SESSION_KEY);
 }
 
+function storeTursoSessionToken(token) {
+  if (typeof token !== 'string' || token.indexOf('.') < 0) return false;
+  const payload = tursoSessionPayload(token);
+  if (!payload || !Number(payload.exp) || Number(payload.exp) <= Date.now()) return false;
+  localStorage.setItem(TURSO_SESSION_KEY, token);
+  localStorage.setItem('fdc_logintime', String(Date.now()));
+  return true;
+}
+
+let tursoSessionNoticeAt = 0;
+function handleTursoSessionExpired() {
+  clearTursoSession();
+  if (Date.now() - tursoSessionNoticeAt < 60000) return;
+  tursoSessionNoticeAt = Date.now();
+  try {
+    if (!currentUser || typeof logout !== 'function') return;
+    logout();
+    ['adminOverlay', 'controllerOverlay', 'helperOverlay', 'controlloOverlay'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.classList.remove('open'); el.style.display = 'none'; }
+    });
+    document.body.style.overflow = '';
+    if (typeof showToast === 'function') showToast('⏱ Sessione scaduta — accedi di nuovo');
+  } catch (e) { console.warn('Chiusura sessione scaduta:', e); }
+}
+
 async function tursoApi(action, payload, authenticated) {
   const headers = { 'Content-Type': 'application/json' };
   if (authenticated) {
     const token = getTursoSessionToken();
-    if (!token) throw new Error('Sessione scaduta: esci e accedi di nuovo');
+    if (!token) {
+      handleTursoSessionExpired();
+      const err = new Error('Sessione scaduta: esci e accedi di nuovo');
+      err.sessionExpired = true;
+      throw err;
+    }
     headers.Authorization = 'Bearer ' + token;
   }
   const res = await fetch(TURSO_API, {
@@ -3141,8 +3197,16 @@ async function tursoApi(action, payload, authenticated) {
   });
   let data = null;
   try { data = await res.json(); } catch(e) {}
+  // Il server allega un token nuovo quando la sessione sta per scadere:
+  // salvarlo mantiene l'utente connesso mentre usa il sito.
+  if (data && data.token) storeTursoSessionToken(data.token);
   if (!res.ok || !data || data.ok === false) {
-    if (authenticated && res.status === 401) clearTursoSession();
+    if (res.status === 401) {
+      handleTursoSessionExpired();
+      const err = new Error((data && data.error) || 'Sessione scaduta o non valida');
+      err.sessionExpired = true;
+      throw err;
+    }
     throw new Error((data && data.error) || ('Errore API Turso (' + res.status + ')'));
   }
   return data;
@@ -3151,13 +3215,31 @@ async function tursoApi(action, payload, authenticated) {
 async function establishTursoSession(email, password) {
   try {
     const data = await tursoApi('session', { email, password }, false);
-    localStorage.setItem(TURSO_SESSION_KEY, data.token);
+    if (data && data.token) storeTursoSessionToken(data.token);
     return data.user;
   } catch(e) {
     console.warn('Accesso Turso non riuscito:', e.message || e);
     return null;
   }
 }
+
+// Rinnova la sessione in anticipo quando mancano meno di 3 ore alla scadenza,
+// così chi usa il sito non viene mai interrotto.
+async function renewTursoSession() {
+  const token = getTursoSessionToken();
+  if (!token) return;
+  const payload = tursoSessionPayload(token);
+  const exp = Number(payload && payload.exp) || 0;
+  if (exp && exp - Date.now() > 3 * 60 * 60 * 1000) return;
+  try {
+    await tursoApi('session:renew', {}, true);
+    console.log('✅ Sessione rinnovata automaticamente');
+  } catch (e) {
+    console.warn('Rinnovo sessione non riuscito:', e.message || e);
+  }
+}
+setTimeout(renewTursoSession, 15000);
+setInterval(function () { if (!document.hidden) renewTursoSession(); }, 30 * 60000);
 
 async function loadActivitiesFromTurso() {
   try {
@@ -3443,8 +3525,11 @@ function isRegistrationClosed() {
 
 // ==================== TURSO SYNC ====================
 // Ascolta i contatori in tempo reale
+let countsListenerUnsub = null;
 function listenCounts() {
-  db.collection('counts').onSnapshot(snapshot => {
+  // Ferma il listener precedente prima di crearne uno nuovo (niente richieste doppie)
+  if (countsListenerUnsub) { try { countsListenerUnsub(); } catch (e) {} countsListenerUnsub = null; }
+  countsListenerUnsub = db.collection('counts').onSnapshot(snapshot => {
     snapshot.forEach(doc => {
       const id = parseInt(doc.id);
       if (!isNaN(id)) counts[id] = doc.data().total || 0;
@@ -3454,18 +3539,27 @@ function listenCounts() {
 }
 
 // Ascolta le prenotazioni dell'utente corrente
+let bookingsListenerUnsub = null;
+function stopBookingsListener() {
+  if (bookingsListenerUnsub) { try { bookingsListenerUnsub(); } catch (e) {} bookingsListenerUnsub = null; }
+}
 function listenBookings() {
   if (!currentUser) return;
-  db.collection('bookings')
+  stopBookingsListener();
+  bookingsListenerUnsub = db.collection('bookings')
     .where('userEmail', '==', currentUser.email)
     .onSnapshot(snapshot => {
       bookings = snapshot.docs.map(d => ({...d.data(), _docId: d.id}));
       updatePanel();
       renderActivities(currentFilter);
     }, err => {
+      // Sessione scaduta: gestita dal logout automatico, niente fallback
+      if (err && err.sessionExpired) { stopBookingsListener(); return; }
       // Fallback: leggi senza filtro e filtra lato client
       console.warn('Turso query error, using fallback:', err);
-      db.collection('bookings').onSnapshot(snapshot => {
+      stopBookingsListener();
+      bookingsListenerUnsub = db.collection('bookings').onSnapshot(snapshot => {
+        if (!currentUser) return;
         bookings = snapshot.docs
           .map(d => ({...d.data(), _docId: d.id}))
           .filter(b => b.userEmail === currentUser.email);
@@ -4465,6 +4559,8 @@ async function handleAuth() {
 
 function logout() {
   clearTursoSession();
+  if (typeof trackOnlineTimer !== 'undefined' && trackOnlineTimer) { clearInterval(trackOnlineTimer); trackOnlineTimer = null; }
+  if (typeof stopBookingsListener === 'function') stopBookingsListener();
   currentUser = null;
   bookings = [];
   window.isAdmin = false;
@@ -5753,6 +5849,8 @@ function saveSessionHours() {
 }
 function checkSessionExpiry() {
   if (!currentUser) return;
+  // Se la chiave di sessione non c'è più (o è scaduta) slogga subito, senza errori
+  if (!getTursoSessionToken()) { handleTursoSessionExpired(); return; }
   const loginTime = parseInt(localStorage.getItem('fdc_logintime') || '0');
   if (!loginTime) { localStorage.setItem('fdc_logintime', Date.now()); return; }
   if (Date.now() - loginTime > sessionHours * 3600000) {
@@ -5789,16 +5887,20 @@ async function sendEmailBlast() {
 }
 
 // ==================== ANALYTICS ====================
+let trackOnlineTimer = null;
 function trackOnline() {
   if (!currentUser) return;
   const uid = currentUser.email;
   onlineRef.set({ [uid]: { email: uid, nome: currentUser.nome, ts: Date.now() } }, { merge: true });
-  // Cleanup ogni 2 min
-  setInterval(() => {
+  // Cleanup ogni 2 min (un solo timer, fermato al logout)
+  if (trackOnlineTimer) clearInterval(trackOnlineTimer);
+  trackOnlineTimer = setInterval(() => {
+    if (!currentUser) return;
     onlineRef.set({ [uid]: { email: uid, nome: currentUser.nome, ts: Date.now() } }, { merge: true });
   }, 120000);
   // Rimuovi al logout
   window.addEventListener('beforeunload', () => {
+    if (!currentUser) return;
     onlineRef.update({ [uid]: DB_FIELD_VALUE.delete() });
   });
 }
@@ -7584,5 +7686,5 @@ function openCookiePrefs(){
 }
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a30a7302cf38524c',t:'MTc4NzY1OTM2MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a311a25aaa73edc7',t:'MTc4NzczNDcwMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
