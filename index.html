@@ -1459,9 +1459,10 @@ body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-be
         <div style="font-size:3rem;margin-bottom:16px;">🔐</div>
         <div style="font-weight:800;color:#c4b5fd;font-size:1.05rem;margin-bottom:8px;">Zona Segreta</div>
         <div style="font-size:.85rem;margin-bottom:20px;">Inserisci il codice segreto nascosto dietro l'albero nel cortile della scuola 🌳</div>
-        <input class="bs-code-inp" id="bsCodeInp" placeholder="••••••" type="password" inputmode="numeric" autocomplete="off" maxlength="6" onkeydown="if(event.key==='Enter')tryBackstageCode()">
+        <input class="bs-code-inp" id="bsCodeInp" placeholder="•••••" type="password" inputmode="numeric" autocomplete="off" maxlength="5" onkeydown="if(event.key==='Enter')tryBackstageCode()">
         <div class="bs-err" id="bsErr"></div>
         <button class="bs-unlock-btn" onclick="tryBackstageCode()">🔓 Entra nel Backstage</button>
+        <button onclick="openBackstageAdminLogin()" style="width:100%;margin-top:10px;padding:11px;background:rgba(255,255,255,.08);border:1.5px solid rgba(192,132,252,.35);border-radius:14px;color:#d8b4fe;font-family:'Nunito',sans-serif;font-weight:800;font-size:.85rem;cursor:pointer;">👑 Accedi come amministratore</button>
       </div>
       <div id="bsContent" style="display:none;"></div>
     </div>
@@ -2685,7 +2686,7 @@ body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-be
       <div class="chisiamo-card chisiamo-card-accent">
         <div class="chisiamo-icon-badge">📧</div>
         <div class="chisiamo-card-title">Contatti</div>
-        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#8be8f9eeeaffffe2fde2ffeae6e2f9eae6eaf9eecbece6eae2e7a5e8e4e6" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
+        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#2e4d5c4b4f5a5a4758475a4f43475c4f434f5c4b6e49434f4742004d4143" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
       </div>
     </div>
 
@@ -7605,13 +7606,13 @@ function closeValigia() {
 }
 
 // ================================================================
-// 🎪 BACKSTAGE SEGRETO — Codice: 272829
+// 🎪 BACKSTAGE SEGRETO — Codice: 47924
 // ================================================================
-var BACKSTAGE_CODE = '272829';
+var BACKSTAGE_CODE = '47924';
 var BACKSTAGE_VIDEO_URL = 'https://www.image2url.com/r2/default/videos/1787842261076-bc50912a-e2cc-4ea3-a87b-84c4aa623514.mp4';
-// Memorizza anche quale codice è stato usato: chi aveva sbloccato il vecchio
-// backstage dovrà inserire almeno una volta il nuovo codice 272829.
-var backstageUnlocked = localStorage.getItem('fdc_backstage_code') === BACKSTAGE_CODE;
+// Non viene salvato: il codice va reinserito a ogni apertura del Backstage.
+var backstageUnlocked = false;
+var backstageMedia = [];
 
 var BACKSTAGE_CONTENT = [
   { emoji:'🎙️', title:'Interviste ai relatori', desc:'I relatori rispondono a 3 domande scomode: perché hai scelto questa attività? Qual è stato il momento più imbarazzante? E cosa vorresti che i ragazzi ricordassero?', tag:'Contenuto riservato' },
@@ -7622,18 +7623,46 @@ var BACKSTAGE_CONTENT = [
 ];
 
 function openBackstage() {
-  document.getElementById('backstageOverlay').classList.add('open');
-  if (backstageUnlocked) {
-    renderBackstageContent();
-  } else {
-    document.getElementById('bsLocked').style.display = 'block';
-    document.getElementById('bsContent').style.display = 'none';
-    document.getElementById('bsErr').textContent = '';
-  }
+  // Ogni apertura riparte bloccata: il codice deve essere sempre reinserito.
+  backstageUnlocked = false;
+  var overlay = document.getElementById('backstageOverlay');
+  overlay.classList.add('open');
+  document.getElementById('bsLocked').style.display = 'block';
+  document.getElementById('bsContent').style.display = 'none';
+  document.getElementById('bsContent').innerHTML = '';
+  document.getElementById('bsErr').textContent = '';
+  var inp = document.getElementById('bsCodeInp');
+  inp.value = '';
+  setTimeout(function(){ inp.focus(); }, 180);
 }
 
 function closeBackstage() {
-  document.getElementById('backstageOverlay').classList.remove('open');
+  var overlay = document.getElementById('backstageOverlay');
+  overlay.querySelectorAll('video,audio').forEach(function(media){ try { media.pause(); } catch(e){} });
+  overlay.classList.remove('open');
+  backstageUnlocked = false;
+  document.getElementById('bsContent').innerHTML = '';
+  document.getElementById('bsContent').style.display = 'none';
+  document.getElementById('bsLocked').style.display = 'block';
+  document.getElementById('bsCodeInp').value = '';
+}
+
+function openBackstageAdminLogin() {
+  closeBackstage();
+  if (currentUser && currentUser.role === 'admin') {
+    showToast('👑 Sei già collegato come amministratore');
+    setTimeout(openBackstage, 350);
+    return;
+  }
+  if (currentUser && !confirm('Per accedere come amministratore devi uscire dall’account attuale. Continuare?')) return;
+  if (currentUser) logout();
+  openAuth();
+  setTimeout(function(){
+    var email = document.getElementById('lEmail');
+    var pass = document.getElementById('lPass');
+    if (email) email.value = ADMIN_EMAIL;
+    if (pass) { pass.value = ''; pass.focus(); }
+  }, 120);
 }
 
 function tryBackstageCode() {
@@ -7641,8 +7670,9 @@ function tryBackstageCode() {
   var val = (inp.value || '').trim().toUpperCase();
   if (val === BACKSTAGE_CODE) {
     backstageUnlocked = true;
-    localStorage.setItem('fdc_backstage', 'true');
-    localStorage.setItem('fdc_backstage_code', BACKSTAGE_CODE);
+    // Non salvare lo sblocco: alla prossima apertura il codice sarà richiesto ancora.
+    localStorage.removeItem('fdc_backstage');
+    localStorage.removeItem('fdc_backstage_code');
     document.getElementById('bsLocked').style.display = 'none';
     renderBackstageContent();
     showToast('🎪 Benvenuto nel Backstage!');
@@ -7680,7 +7710,81 @@ function renderBackstageContent() {
         '<div class="bs-card-title">' + item.title + '</div>' +
         '<div class="bs-card-desc">' + item.desc + '</div>' +
         '</div>';
-    }).join('');
+    }).join('') +
+    '<div id="bsDynamicMedia"><div class="bs-video-note">⏳ Caricamento contenuti aggiuntivi...</div></div>' +
+    (currentUser && currentUser.role === 'admin' ? backstageAdminPanelHTML() : '');
+  loadBackstageMedia();
+}
+
+function backstageAdminPanelHTML() {
+  return '<div class="bs-card" style="cursor:default;border-color:rgba(251,191,36,.45);margin-top:18px;">' +
+    '<div class="bs-card-title" style="color:#fde68a;">👑 Gestione contenuti Backstage</div>' +
+    '<div class="bs-card-desc" style="margin-bottom:10px;">Aggiungi una foto, un video o un audio tramite collegamento.</div>' +
+    '<select id="bsMediaType" class="bs-code-inp" style="letter-spacing:0;margin:6px 0;font-size:.9rem;"><option value="video">🎬 Video</option><option value="audio">🎵 Audio</option><option value="image">📷 Foto</option></select>' +
+    '<input id="bsMediaTitle" class="bs-code-inp" style="letter-spacing:0;margin:6px 0;font-size:.9rem;text-align:left;" placeholder="Titolo del contenuto">' +
+    '<input id="bsMediaUrl" class="bs-code-inp" style="letter-spacing:0;margin:6px 0;font-size:.85rem;text-align:left;" placeholder="https://...">' +
+    '<button class="bs-unlock-btn" onclick="saveBackstageMedia()">➕ Pubblica nel Backstage</button>' +
+    '<button onclick="window.open(\'https://www.image2url.com/\',\'_blank\',\'noopener\')" style="width:100%;margin-top:8px;padding:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:12px;color:#d8b4fe;font-weight:800;cursor:pointer;">📤 Carica un file dal dispositivo su Image2URL</button>' +
+    '<div class="bs-video-note">Dopo il caricamento, copia il link ottenuto e incollalo qui sopra.</div>' +
+  '</div>';
+}
+
+async function loadBackstageMedia() {
+  var box = document.getElementById('bsDynamicMedia');
+  if (!box || !backstageUnlocked) return;
+  try {
+    var doc = await db.collection('settings').doc('backstageMedia').get();
+    backstageMedia = doc.exists && Array.isArray(doc.data().items) ? doc.data().items : [];
+    renderBackstageMediaList();
+  } catch(e) {
+    box.innerHTML = '<div class="bs-video-error" style="display:block;">⚠️ Contenuti aggiuntivi momentaneamente non disponibili.</div>';
+  }
+}
+
+function renderBackstageMediaList() {
+  var box = document.getElementById('bsDynamicMedia');
+  if (!box) return;
+  if (!backstageMedia.length) { box.innerHTML = ''; return; }
+  box.innerHTML = backstageMedia.map(function(item, index) {
+    var title = escapeHTML(item.title || 'Contenuto Backstage');
+    var url = escapeHTML(item.url || '');
+    var media = item.type === 'image'
+      ? '<img src="'+url+'" alt="'+title+'" loading="lazy" style="display:block;width:100%;max-height:55vh;object-fit:contain;border-radius:14px;background:#08040f;">'
+      : item.type === 'audio'
+        ? '<audio controls preload="metadata" style="width:100%;margin-top:8px;"><source src="'+url+'"></audio>'
+        : '<video class="bs-video" controls playsinline preload="metadata"><source src="'+url+'" type="video/mp4"></video>';
+    var remove = currentUser && currentUser.role === 'admin'
+      ? '<button onclick="deleteBackstageMedia('+index+')" style="margin-top:9px;background:#7f1d1d;color:#fecaca;border:none;border-radius:10px;padding:7px 11px;font-weight:800;cursor:pointer;">🗑️ Elimina</button>' : '';
+    return '<div class="bs-video-card"><div class="bs-video-title">'+title+'</div>'+media+remove+'</div>';
+  }).join('');
+}
+
+async function saveBackstageMedia() {
+  if (!currentUser || currentUser.role !== 'admin') { showToast('🔒 Accesso amministratore richiesto'); return; }
+  var type = document.getElementById('bsMediaType').value;
+  var title = document.getElementById('bsMediaTitle').value.trim();
+  var url = document.getElementById('bsMediaUrl').value.trim();
+  if (!title || !/^https:\/\//i.test(url)) { showToast('⚠️ Inserisci titolo e link https valido'); return; }
+  backstageMedia.push({ type:type, title:sanitizeInput(title,100), url:sanitizeInput(url,1000), createdAt:Date.now() });
+  try {
+    await db.collection('settings').doc('backstageMedia').set({ items:backstageMedia }, { merge:true });
+    renderBackstageMediaList();
+    document.getElementById('bsMediaTitle').value = '';
+    document.getElementById('bsMediaUrl').value = '';
+    showToast('✅ Contenuto pubblicato nel Backstage');
+  } catch(e) { backstageMedia.pop(); showToast('❌ Salvataggio non riuscito'); }
+}
+
+async function deleteBackstageMedia(index) {
+  if (!currentUser || currentUser.role !== 'admin') return;
+  if (!confirm('Eliminare questo contenuto dal Backstage?')) return;
+  var previous = backstageMedia.slice();
+  backstageMedia.splice(index,1);
+  try {
+    await db.collection('settings').doc('backstageMedia').set({ items:backstageMedia }, { merge:true });
+    renderBackstageMediaList();
+    showToast('🗑️ Contenuto eliminato');
+  } catch(e) { backstageMedia = previous; showToast('❌ Eliminazione non riuscita'); }
 }
 
 // Hook: when a booking is confirmed, add to diary
@@ -7888,7 +7992,7 @@ function openCookiePrefs(){
 }
 </script>
 
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a31bf5556c59ee51',t:'MTc4Nzg0Mjk1Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
 open'); // mostra direttamente le opzioni
 }
