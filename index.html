@@ -2737,7 +2737,7 @@ body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-be
       <div class="chisiamo-card chisiamo-card-accent">
         <div class="chisiamo-icon-badge">📧</div>
         <div class="chisiamo-card-title">Contatti</div>
-        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#187b6a7d796c6c716e716c7975716a7975796a7d587f75797174367b7775" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
+        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#98fbeafdf9ececf1eef1ecf9f5f1eaf9f5f9eafdd8fff5f9f1f4b6fbf7f5" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
       </div>
     </div>
 
@@ -4763,10 +4763,14 @@ function updateNavbar() {
       <button class="btn-nav-logout" onclick="logout()">Esci</button>`;
     listenBookings();
   } else if (currentUser.role === 'controller') {
+    const controllerDisplayName = [currentUser.nome, currentUser.cognome].filter(Boolean).join(' ') || currentUser.email || 'Controllore';
     right.innerHTML = `
-      <div class="nav-user-pill"><div class="nav-user-dot" style="background:#22c55e;"></div>🔍 Controllore</div>
+      <div class="nav-user-pill"><div class="nav-user-dot" style="background:#22c55e;"></div>🔍 ${escapeHTML(controllerDisplayName)} · Controllore</div>
       <button onclick="openControllerMode()" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;padding:8px 16px;border-radius:50px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.8rem;cursor:pointer;display:flex;align-items:center;gap:5px;">📋 Pannello controllore</button>
       <button class="btn-nav-logout" onclick="logout()">Esci</button>`;
+    // Anche il Controllore conserva le proprie prenotazioni personali nel
+    // pulsante “Le mie prenotazioni” della pagina Attività.
+    listenBookings();
   } else if (currentUser.role === 'helper') {
     right.innerHTML = `
       <div class="nav-user-pill"><div class="nav-user-dot" style="background:#f59e0b;"></div>🙋 Helper</div>
@@ -6456,26 +6460,36 @@ function startQRScan() {
   }, 500);
 }
 
-function openControllerMode() {
-  openControlloMenu('controller');
+async function openControllerMode() {
+  await openControlloMenu('controller');
 }
 
-function openHelperMode() {
-  openControlloMenu('helper');
+async function openHelperMode() {
+  await openControlloMenu('helper');
 }
 
-function openControlloMenu(role) {
-  // Set role label
+async function openControlloMenu(role) {
+  // Prima sincronizza il ruolo corrente dal server, evitando di leggere le
+  // prenotazioni con un vecchio token da utente normale.
+  const serverRole = await refreshTursoUserRole(false);
+  if (!currentUser || (role === 'controller' && !['controller','admin'].includes(serverRole || currentUser.role))) {
+    showToast('🔒 Il tuo account non risulta Controllore. Chiedi all’amministratore di verificare il ruolo.');
+    updateNavbar();
+    return;
+  }
+
+  // Set role label e nome reale
   const icon = document.getElementById('controlloRoleIcon');
   const name = document.getElementById('controlloRoleName');
+  const displayName = [currentUser.nome, currentUser.cognome].filter(Boolean).join(' ') || currentUser.email || '';
   if (role === 'controller') {
     if(icon) icon.textContent = '🔍';
-    if(name) name.textContent = 'Controllore QR';
+    if(name) name.textContent = displayName + ' · Controllore QR';
     // helper-only tabs hidden
     document.querySelectorAll('.helper-only').forEach(el => el.style.display = 'none');
   } else {
     if(icon) icon.textContent = '🙋';
-    if(name) name.textContent = 'Helper';
+    if(name) name.textContent = displayName + ' · Helper';
     document.querySelectorAll('.helper-only').forEach(el => el.style.display = '');
   }
   document.getElementById('controlloOverlay').style.display = 'block';
@@ -6617,18 +6631,34 @@ function showCtrlResult(html,bg,color) {
   r.style.display='block'; r.style.background=bg; r.style.color=color; r.innerHTML=html;
 }
 
-function ctrlLoadBookings() {
+async function ctrlLoadBookings() {
   const tbody=document.getElementById('ctrlBookingsTbody');
   const noEl=document.getElementById('ctrlNoBookings');
-  tbody.innerHTML=''; noEl.style.display='block'; noEl.textContent='⏳ Caricamento...';
-  db.collection('bookings').orderBy('timestamp','desc').get().then(snap => {
-    if(snap.empty){ noEl.textContent='Nessuna prenotazione ancora.'; return; }
+  tbody.innerHTML=''; noEl.style.display='block'; noEl.textContent='⏳ Verifica ruolo e caricamento prenotazioni...';
+
+  try {
+    const role = await refreshTursoUserRole(false);
+    if (!currentUser || !['controller','helper','admin'].includes(role || currentUser.role)) {
+      noEl.textContent='🔒 Ruolo Controllore non attivo. Chiedi all’amministratore di assegnarlo nuovamente.';
+      return;
+    }
+
+    const snap = await db.collection('bookings').orderBy('timestamp','desc').get();
+    if(snap.empty){
+      noEl.textContent='Nessuna prenotazione presente nel database.';
+      return;
+    }
     noEl.style.display='none';
     tbody.innerHTML=snap.docs.map(d=>{
       const b=d.data();
-      return `<tr><td>${b.nome||'—'}</td><td>${b.cognome||'—'}</td><td>${b.emoji||''} ${b.title||'—'}</td><td><span class="tag-day">${dayShort[b.day]||((b.day||'?')+' Set')}</span></td><td>${b.num||1}</td></tr>`;
+      return `<tr><td>${escapeHTML(b.nome||'—')}</td><td>${escapeHTML(b.cognome||'—')}</td><td>${escapeHTML(b.emoji||'')} ${escapeHTML(b.title||'—')}</td><td><span class="tag-day">${escapeHTML(dayShort[b.day]||((b.day||'?')+' Set'))}</span></td><td>${Number(b.num)||1}</td></tr>`;
     }).join('');
-  }).catch(()=>{ noEl.textContent='Errore caricamento.'; });
+  } catch(error) {
+    console.error('Caricamento prenotazioni controllore:', error);
+    noEl.textContent = error && error.sessionExpired
+      ? '⏱ Sessione scaduta. Accedi nuovamente.'
+      : '❌ Impossibile caricare le prenotazioni. Riprova tra qualche secondo.';
+  }
 }
 
 function ctrlLoadRiepilogo() {
@@ -8141,7 +8171,7 @@ function openCookiePrefs(){
 }
 </script>
 
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a33587a599075811',t:'MTc4ODExMTA5NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
 open'); // mostra direttamente le opzioni
 }
