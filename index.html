@@ -100,13 +100,13 @@
 
 
 
-<!-- Font non bloccanti: il testo appare subito con il font di sistema. -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Pacifico&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Pacifico&display=optional" rel="stylesheet"></noscript>
+<!-- Font originali del sito, ospitati localmente e precaricati: belli e senza salti. -->
+<link rel="preload" href="assets/fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/pacifico-latin.woff2" as="font" type="font/woff2" crossorigin>
 <!-- Leaflet e jsQR vengono caricati solo quando l'utente apre mappa o scanner. -->
 <style>
+@font-face { font-family:'Nunito'; src:url('assets/fonts/nunito-latin.woff2') format('woff2'); font-style:normal; font-weight:400 900; font-display:swap; }
+@font-face { font-family:'Pacifico'; src:url('assets/fonts/pacifico-latin.woff2') format('woff2'); font-style:normal; font-weight:400; font-display:swap; }
 * { margin:0; padding:0; box-sizing:border-box; }
 :root {
   --pink: #f472b6; --purple: #a855f7; --blue: #60a5fa;
@@ -2748,7 +2748,7 @@ body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-be
       <div class="chisiamo-card chisiamo-card-accent">
         <div class="chisiamo-icon-badge">📧</div>
         <div class="chisiamo-card-title">Contatti</div>
-        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#a1c2d3c4c0d5d5c8d7c8d5c0ccc8d3c0ccc0d3c4e1c6ccc0c8cd8fc2cecc" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
+        <div class="chisiamo-card-text"><a href="mailto:creattivitamiramare@gmail.com" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
       </div>
     </div>
 
@@ -2986,7 +2986,7 @@ body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-be
 </div><!-- /page-annunci -->
 </main>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 // ==================== TURSO DATA ADAPTER ====================
 // Compatibilità con l'API usata dal sito: tutti i dati persistenti passano
 // dalla Netlify Function e vengono salvati esclusivamente su Turso.
