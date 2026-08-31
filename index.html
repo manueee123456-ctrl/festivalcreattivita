@@ -103,8 +103,8 @@
 <!-- Font non bloccanti: il testo appare subito con il font di sistema. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Pacifico&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Pacifico&display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Pacifico&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Pacifico&display=optional" rel="stylesheet"></noscript>
 <!-- Leaflet e jsQR vengono caricati solo quando l'utente apre mappa o scanner. -->
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -347,14 +347,16 @@ body.dark #bookingsTable td:last-child { background:#16112e; }
 .chisiamo-desc { color:rgba(255,255,255,.75); font-size:.95rem; line-height:1.8; max-width:680px; margin:0 auto; }
 .chisiamo-desc strong { color:white; }
 
-footer { text-align:center; padding:32px 20px; background:linear-gradient(135deg,#fce7f3,#f3e8ff); color:#9ca3af; font-size:.85rem; border-top:none; }
-footer strong { color:#7c3aed; }
-.footer-credit { margin-top:14px; font-size:.8rem; color:#7c6aad; }
-.footer-credit b { color:#7c3aed; }
-body.dark footer { background:linear-gradient(135deg,#0d0b1a,#16112e); }
-body.dark .footer-credit { color:#7c6aad; }
-body.dark .footer-credit b { color:#c084fc; }
-footer strong { color:rgba(255,255,255,.8); }
+footer { text-align:center; padding:32px 20px; background:linear-gradient(135deg,#fce7f3,#f3e8ff); color:#4b5563; font-size:.85rem; border-top:none; }
+footer strong { color:#6d28d9; }
+footer a { color:#5b21b6!important; }
+.footer-credit { margin-top:14px; font-size:.8rem; color:#59466f; }
+.footer-credit b { color:#6d28d9; }
+body.dark footer { background:linear-gradient(135deg,#0d0b1a,#16112e); color:#c4b5d5; }
+body.dark footer a { color:#d8b4fe!important; }
+body.dark footer strong { color:#e9d5ff; }
+body.dark .footer-credit { color:#c4b5d5; }
+body.dark .footer-credit b { color:#d8b4fe; }
 
 /* ===== PRENOTA ORA SECTION ===== */
 .prenota-section { background:linear-gradient(135deg,#fce7f3 0%,#f3e8ff 50%,#dbeafe 100%); padding:64px 20px; text-align:center; position:relative; overflow:hidden; }
@@ -435,7 +437,7 @@ footer strong { color:rgba(255,255,255,.8); }
   flex:1; display:flex; flex-direction:column; align-items:center;
   justify-content:center; gap:3px; border:none; background:none;
   font-family:'Nunito',sans-serif; cursor:pointer;
-  color:#9ca3af; transition:all .22s cubic-bezier(.34,1.56,.64,1);
+  color:#596273; transition:all .22s cubic-bezier(.34,1.56,.64,1);
   padding:8px 4px; position:relative;
 }
 .tab-btn .tab-icon { font-size:1.35rem; transition:transform .22s cubic-bezier(.34,1.56,.64,1); }
@@ -613,6 +615,13 @@ body.dark .otp-box.filled { background:#2e1065; border-color:#c084fc; }
   .admin-content{padding:20px 16px;}
   .edit-grid{grid-template-columns:1fr;}
   .admin-nav{padding:0 12px; overflow-x:auto;}
+  /* Su telefono decine di animazioni simultanee causavano layout e rendering
+     costosi. Restano transizioni e animazioni di pagina, ma le 36 card entrano
+     subito e senza filtri/trasformazioni ripetute. */
+  .activities-section .card-animate,
+  .activities-section .day-group-animate { animation:none!important; }
+  .activity-card { content-visibility:auto; contain-intrinsic-size:360px; }
+  .cards-grid { align-items:start; }
 }
 
 /* ===== DARK MODE MIDNIGHT PURPLE ===== */
@@ -1611,16 +1620,16 @@ body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-be
   <div class="settings-panel-title">⚙️ Impostazioni</div>
   <div class="settings-row">
     <div class="settings-row-label">🎵 Musica</div>
-    <label class="toggle-switch"><input type="checkbox" id="toggleMusic" onchange="handleMusicToggle(this.checked)"><span class="toggle-slider"></span></label>
+    <label class="toggle-switch" aria-label="Attiva o disattiva la musica"><input type="checkbox" id="toggleMusic" aria-label="Musica" onchange="handleMusicToggle(this.checked)"><span class="toggle-slider" aria-hidden="true"></span></label>
   </div>
 
   <div class="settings-row">
     <div class="settings-row-label">🌙 Dark mode</div>
-    <label class="toggle-switch"><input type="checkbox" id="toggleDark" onchange="handleDarkToggle(this.checked)"><span class="toggle-slider"></span></label>
+    <label class="toggle-switch" aria-label="Attiva o disattiva il tema scuro"><input type="checkbox" id="toggleDark" aria-label="Tema scuro" onchange="handleDarkToggle(this.checked)"><span class="toggle-slider" aria-hidden="true"></span></label>
   </div>
   <div class="settings-row">
     <div class="settings-row-label">✨ Animazioni</div>
-    <label class="toggle-switch"><input type="checkbox" id="toggleAnim" checked onchange="handleAnimToggle(this.checked)"><span class="toggle-slider"></span></label>
+    <label class="toggle-switch" aria-label="Attiva o disattiva le animazioni"><input type="checkbox" id="toggleAnim" aria-label="Animazioni" checked onchange="handleAnimToggle(this.checked)"><span class="toggle-slider" aria-hidden="true"></span></label>
   </div>
   <div style="border-top:1px solid #f3e8ff;margin:10px 0 8px;"></div>
   <button onclick="toggleSettingsPanel();openHeatmap();" style="width:100%;padding:9px;background:linear-gradient(135deg,#1e1b4b,#4c1d95);border:none;border-radius:10px;color:white;font-family:'Nunito',sans-serif;font-weight:800;font-size:.82rem;cursor:pointer;margin-bottom:6px;">🌡️ Heatmap festival</button>
@@ -2380,6 +2389,7 @@ body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-be
 
 
 
+<main id="mainContent">
 <!-- ===PAGE 1: HOME=== -->
 <div class="page active" id="page-home">
 <div class="hero">
@@ -2738,7 +2748,7 @@ body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-be
       <div class="chisiamo-card chisiamo-card-accent">
         <div class="chisiamo-icon-badge">📧</div>
         <div class="chisiamo-card-title">Contatti</div>
-        <div class="chisiamo-card-text"><a href="mailto:creattivitamiramare@gmail.com" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
+        <div class="chisiamo-card-text"><a href="/cdn-cgi/l/email-protection#a1c2d3c4c0d5d5c8d7c8d5c0ccc8d3c0ccc0d3c4e1c6ccc0c8cd8fc2cecc" style="color:#f0abfc;text-decoration:underline;font-weight:700;">creattivitamiramare&#64;gmail.com</a></div>
       </div>
     </div>
 
@@ -2974,8 +2984,9 @@ body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-be
   </div>
     </div><!-- /annunciTabList -->
 </div><!-- /page-annunci -->
+</main>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ==================== TURSO DATA ADAPTER ====================
 // Compatibilità con l'API usata dal sito: tutti i dati persistenti passano
 // dalla Netlify Function e vengono salvati esclusivamente su Turso.
@@ -3425,7 +3436,7 @@ async function loadActivitiesFromTurso() {
       escapeRoom.time = '15:30 - 16:30';
       escapeRoom.location = 'Scuola Secondaria Di Duccio, Miramare';
     }
-    if (document.getElementById('page-programma')?.classList.contains('active')) renderActivities(currentFilter);
+    scheduleActivitiesRender(220);
     if (typeof renderSportGrid === 'function' && document.getElementById('page-home')?.classList.contains('active')) renderSportGrid();
     // Non costruire centinaia di campi amministrativi mentre il pannello è chiuso.
     if (typeof refreshAdminActivities === 'function' && currentUser?.role === 'admin' && document.getElementById('adminOverlay')?.classList.contains('open')) refreshAdminActivities();
@@ -3642,8 +3653,8 @@ function loadSiteSettings() {
         }
       });
     }
-    renderActivities(currentFilter);
-    if (typeof renderSportGrid === 'function') renderSportGrid();
+    scheduleActivitiesRender(220);
+    if (typeof renderSportGrid === 'function' && document.getElementById('page-home')?.classList.contains('active')) renderSportGrid();
   }, e => console.error('Errore ascolto impostazioni condivise:', e));
 
 }
@@ -3686,7 +3697,7 @@ function listenCounts() {
       const id = parseInt(doc.id);
       if (!isNaN(id)) counts[id] = doc.data().total || 0;
     });
-    if (document.getElementById('page-programma')?.classList.contains('active')) renderActivities(currentFilter);
+    scheduleActivitiesRender(220);
   });
 }
 
@@ -3713,7 +3724,7 @@ function listenBookings() {
         return bookingEmail && bookingEmail === signedInEmail;
       });
     updatePanel();
-    if (document.getElementById('page-programma')?.classList.contains('active')) renderActivities(currentFilter);
+    scheduleActivitiesRender(220);
   }, err => {
     if (err && err.sessionExpired) { stopBookingsListener(); return; }
     console.error('Caricamento prenotazioni personali:', err);
@@ -3846,6 +3857,16 @@ function loadPrenotaTexts() {
   if (savedIst)   { const e=document.getElementById('chisiamo-top-istituto');if(e) e.textContent=savedIst; }
 }
 
+
+let activitiesRenderTimer = null;
+function scheduleActivitiesRender(delay = 180) {
+  if (!document.getElementById('page-programma')?.classList.contains('active')) return;
+  if (activitiesRenderTimer) clearTimeout(activitiesRenderTimer);
+  activitiesRenderTimer = setTimeout(function(){
+    activitiesRenderTimer = null;
+    if (document.getElementById('page-programma')?.classList.contains('active')) renderActivities(currentFilter);
+  }, delay);
+}
 
 function renderActivities(dayFilter) {
   currentFilter = dayFilter;
