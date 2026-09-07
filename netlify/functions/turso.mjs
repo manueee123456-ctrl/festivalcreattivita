@@ -784,6 +784,56 @@ async function deleteBooking(session, docId) {
   return { docId, activityId: Number(activityId), total: Number(count?.data?.total) || 0 };
 }
 
+async function joinImprovedWaitlist(session, body) {
+  if (!session) throw new Error('Accesso richiesto');
+  const activityId = Number(body.activityId);
+  if (!Number.isFinite(activityId)) throw new Error('Attività non valida');
+  const email = String(session.email).trim().toLowerCase();
+  const docId = String(activityId) + '_' + email;
+  const existing = await getAppDocument('waitlist', docId);
+  if (!existing) await setAppDocument('waitlist', docId, {
+    activityId, userEmail:email, nome:String(body.nome||''), cognome:String(body.cognome||''),
+    requestedAt:Date.now(), participants:Math.max(1,Math.min(3,Number(body.participants)||1))
+  }, false, 'turso');
+  const records = (await listAppDocuments('waitlist')).filter(r=>Number(r.data.activityId)===activityId)
+    .sort((a,b)=>(Number(a.data.requestedAt)||a.updatedAt)-(Number(b.data.requestedAt)||b.updatedAt));
+  return { docId, position:records.findIndex(r=>r.docId===docId)+1, total:records.length };
+}
+async function improvedWaitlistStatus(session, activityId) {
+  if (!session) throw new Error('Accesso richiesto');
+  activityId=Number(activityId); const email=String(session.email).toLowerCase(); const docId=activityId+'_'+email;
+  const records=(await listAppDocuments('waitlist')).filter(r=>Number(r.data.activityId)===activityId)
+    .sort((a,b)=>(Number(a.data.requestedAt)||a.updatedAt)-(Number(b.data.requestedAt)||b.updatedAt));
+  const index=records.findIndex(r=>r.docId===docId); const count=await getAppDocument('counts',String(activityId));
+  const activityRows=await tursoQuery('SELECT max FROM activities WHERE id=? LIMIT 1',[activityId]);
+  const capacity=Number(activityRows[0]?.max)||15, occupied=Number(count?.data?.total)||0;
+  return { joined:index>=0, position:index+1, total:records.length, canClaim:index===0&&occupied<capacity, available:Math.max(0,capacity-occupied) };
+}
+async function leaveImprovedWaitlist(session, activityId) {
+  if (!session) throw new Error('Accesso richiesto');
+  const docId=Number(activityId)+'_'+String(session.email).toLowerCase(); const record=await getAppDocument('waitlist',docId);
+  if (record) await deleteMirrorRecord('waitlist',docId,record.data); return {docId};
+}
+async function claimImprovedWaitlist(session, body) {
+  const status=await improvedWaitlistStatus(session,body.activityId);
+  if (!status.joined||status.position!==1) throw new Error('Non sei il primo in lista');
+  if (!status.canClaim) throw new Error('Nessun posto disponibile');
+  const result=await createBooking(session,body.bookingData||{},body.capacity,body.docId);
+  await leaveImprovedWaitlist(session,body.activityId); return result;
+}
+async function checkInBooking(session, docId) {
+  if (!session || !['admin','controller','helper'].includes(session.role)) throw new Error('Accesso controllore richiesto');
+  docId=normalizeDocId(docId); const now=Date.now();
+  const result=await tursoExecute(`UPDATE app_documents SET
+    data_json=json_set(data_json,'$.checkedIn',json('true'),'$.checkInAt',?,'$.checkedInBy',?),
+    updated_at=?,source='turso'
+    WHERE collection_path='bookings' AND doc_id=? AND deleted=0
+      AND COALESCE(json_extract(data_json,'$.checkedIn'),0) NOT IN (1,'true')`,[now,session.email,now,docId]);
+  const booking=await getAppDocument('bookings',docId);
+  if (!booking) throw new Error('Prenotazione non trovata');
+  return {already:Number(result.rows_affected||result.affected_row_count||0)===0,booking:booking.data};
+}
+
 async function handleAction(body, session) {
   const action = String(body?.action || 'health');
 
@@ -843,6 +893,27 @@ async function handleAction(body, session) {
     } catch (error) {
       return { __status: 400, ok: false, error: error.message };
     }
+  }
+
+  if (action === 'waitlist:join') {
+    try { return {ok:true,...(await joinImprovedWaitlist(session,body))}; }
+    catch(error){ return {__status:error.message==='Accesso richiesto'?401:400,ok:false,error:error.message}; }
+  }
+  if (action === 'waitlist:status') {
+    try { return {ok:true,...(await improvedWaitlistStatus(session,body.activityId))}; }
+    catch(error){ return {__status:error.message==='Accesso richiesto'?401:400,ok:false,error:error.message}; }
+  }
+  if (action === 'waitlist:leave') {
+    try { return {ok:true,...(await leaveImprovedWaitlist(session,body.activityId))}; }
+    catch(error){ return {__status:error.message==='Accesso richiesto'?401:400,ok:false,error:error.message}; }
+  }
+  if (action === 'waitlist:claim') {
+    try { return {ok:true,...(await claimImprovedWaitlist(session,body))}; }
+    catch(error){ return {__status:/posto|lista/i.test(error.message)?409:400,ok:false,error:error.message}; }
+  }
+  if (action === 'bookings:checkin') {
+    try { return {ok:true,...(await checkInBooking(session,body.docId))}; }
+    catch(error){ return {__status:/Accesso/.test(error.message)?403:404,ok:false,error:error.message}; }
   }
 
   if (action === 'bookings:create') {
