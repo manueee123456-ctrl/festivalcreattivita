@@ -5,6 +5,7 @@ import { Scene } from "../components/Scene";
 import { FloatingBalloons } from "../components/Decor";
 import { BigButton, Portrait, StoryCard } from "../components/UI";
 import { unlockAudio } from "../audio";
+import { MotionControl } from "../components/MotionPreference";
 
 export function IntroScreen({ onStart }: { onStart: (name: string) => void }) {
   const [name, setName] = useState("");
@@ -50,6 +51,8 @@ export function IntroScreen({ onStart }: { onStart: (name: string) => void }) {
             className="story-card rounded-[1.6rem] border-[5px] px-5 py-4 text-center text-2xl text-[#2b1810] placeholder:text-[#8b5a2b] md:text-3xl"
           />
         </label>
+
+        <MotionControl />
 
         <BigButton
           color="red"

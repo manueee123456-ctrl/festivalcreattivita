@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+/* The original fonts are embedded in the exported HTML, not fetched online. */
+@font-face {
+  font-family: "Fredoka";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("@fontsource-variable/fredoka/files/fredoka-latin-wght-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 200 1000;
+  font-display: swap;
+  src: url("@fontsource-variable/nunito/files/nunito-latin-wght-normal.woff2") format("woff2");
+}
+
 @theme {
   --font-display: "Fredoka", "Nunito", system-ui, sans-serif;
   --font-body: "Nunito", system-ui, sans-serif;
@@ -317,12 +333,12 @@ textarea {
   border: 3px solid #fff6dc;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+/* The provider follows the OS by default, but a deliberate user choice can
+   enable or disable motion for this quiz without changing system settings. */
+.balloon-journey[data-motion="reduced"] *,
+.balloon-journey[data-motion="reduced"] *::before,
+.balloon-journey[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }

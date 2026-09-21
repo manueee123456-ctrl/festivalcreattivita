@@ -13,7 +13,7 @@ export default defineConfig({
       args: ["--no-sandbox", "--no-zygote", "--disable-dev-shm-usage", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
     } : {},
   },
-  webServer: {
+  webServer: process.env.QUIZ_ENTRY_URL ? undefined : {
     command: "npm run dev",
     url: "http://127.0.0.1:5173",
     reuseExistingServer: !process.env.CI,

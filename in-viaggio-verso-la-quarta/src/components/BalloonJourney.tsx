@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import "./balloon-journey.css";
+import { useMotionPreference } from "./MotionPreference";
 
 type Travel = (changeScene: () => void, destination: string) => boolean;
 type Phase = "idle" | "departing" | "arriving";
@@ -26,10 +27,10 @@ export function useBalloonJourney() {
 }
 
 export function BalloonJourney({ children }: { children: ReactNode }) {
+  const { reduced } = useMotionPreference();
   const [flight, setFlight] = useState({
     phase: "idle" as Phase,
     destination: "",
-    reduced: false,
     id: 0,
   });
   const busy = useRef(false);
@@ -48,14 +49,12 @@ export function BalloonJourney({ children }: { children: ReactNode }) {
     if (busy.current) return false;
     busy.current = true;
     hasTravelled.current = true;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const departure = reduced ? 80 : DEPARTURE_MS;
     const arrival = reduced ? 100 : ARRIVAL_MS;
 
     setFlight((previous) => ({
       phase: "departing",
       destination,
-      reduced,
       id: previous.id + 1,
     }));
 
@@ -72,7 +71,7 @@ export function BalloonJourney({ children }: { children: ReactNode }) {
       }, departure + arrival),
     ];
     return true;
-  }, []);
+  }, [reduced]);
 
   useEffect(() => {
     if (flight.phase !== "idle" || !hasTravelled.current) return;
@@ -94,7 +93,7 @@ export function BalloonJourney({ children }: { children: ReactNode }) {
 
   return (
     <JourneyContext.Provider value={travel}>
-      <div className={`balloon-journey${flight.reduced ? " journey-reduced" : ""}`} style={timing}>
+      <div className={`balloon-journey${reduced ? " journey-reduced" : ""}`} data-motion={reduced ? "reduced" : "full"} style={timing}>
         <div
           ref={screen}
           className="journey-screen"

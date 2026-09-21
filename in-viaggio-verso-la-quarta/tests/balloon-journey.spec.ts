@@ -7,8 +7,13 @@ async function settled(page: Page) {
   await expect(page.locator(".journey-screen")).not.toHaveAttribute("inert", "");
 }
 
+const entryURL = process.env.QUIZ_ENTRY_URL || "/";
+const diagnostics = new WeakMap<Page, string[]>();
+
+test.use({ reducedMotion: "no-preference" });
+
 async function start(page: Page) {
-  await page.goto("/");
+  await page.goto(entryURL);
   await page.getByPlaceholder("Il tuo nome").fill("Giulia");
   // The original start button pulses continuously; keyboard activation is stable.
   await page.getByRole("button", { name: "Allacciate i vostri palloncini!" }).press("Enter");
@@ -30,9 +35,26 @@ async function finishQuiz(page: Page) {
   }
 }
 
-test.beforeEach(async ({ page }) => {
-  // External fonts are cosmetic: don't let an unavailable font CDN slow tests.
-  await page.route(/https:\/\/fonts\.(googleapis|gstatic)\.com\//, (route) => route.abort());
+test.beforeEach(async ({ page, context }) => {
+  const errors: string[] = [];
+  diagnostics.set(page, errors);
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  if (entryURL.startsWith("file:")) {
+    // Exercise the actual downloaded HTML, without a server or Internet access.
+    await context.setOffline(true);
+    page.on("request", (request) => {
+      if (request.resourceType() !== "document" && /^(https?:|file:)/.test(request.url())) {
+        errors.push(`Non-embedded resource: ${request.url().slice(0, 200)}`);
+      }
+    });
+  }
+});
+
+test.afterEach(async ({ page }) => {
+  expect(diagnostics.get(page), "No JavaScript, security-origin or missing-resource errors").toEqual([]);
 });
 
 test("wrong answers stay put; a correct answer flies forward only once", async ({ page }) => {
@@ -152,3 +174,80 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 }
+
+
+test("the user can explicitly enable moving balloons even with the system reduced-motion preference", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto(entryURL);
+  const motion = page.getByRole("switch", { name: "Animazioni con palloncini" });
+  await expect(motion).toHaveAttribute("aria-checked", "false");
+  await expect(motion).toContainText("Attiva i palloncini");
+  await motion.click();
+  await expect(motion).toHaveAttribute("aria-checked", "true");
+  await expect(page.locator(".balloon-journey")).toHaveAttribute("data-motion", "full");
+  await page.getByRole("button", { name: "Allacciate i vostri palloncini!" }).press("Enter");
+  const carrier = page.locator(".journey-carrier-flight");
+  await expect(carrier).toBeVisible();
+  await expect(carrier).toHaveCSS("animation-name", "journey-carry");
+  await expect(carrier).toHaveCSS("animation-duration", "1.7s");
+  const firstPosition = await carrier.evaluate((element) => getComputedStyle(element).transform);
+  await expect.poll(() => carrier.evaluate((element) => getComputedStyle(element).transform)).not.toBe(firstPosition);
+  await expect(page.locator("h3")).toHaveText(level1Questions[0].question);
+  await settled(page);
+  await page.locator("button").filter({ hasText: level1Questions[0].options[1].text }).click();
+  await expect(page.locator(".journey-flight")).toBeVisible();
+  await expect(page.locator("h3")).toHaveText(level1Questions[1].question);
+  await settled(page);
+});
+
+test("motion follows system changes unless the user overrides it and can be disabled again", async ({ page }) => {
+  await page.goto(entryURL);
+  const motion = page.getByRole("switch", { name: "Animazioni con palloncini" });
+  await expect(motion).toHaveAttribute("aria-checked", "true");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(motion).toHaveAttribute("aria-checked", "false");
+  await motion.click();
+  await expect(motion).toHaveAttribute("aria-checked", "true");
+  await motion.click();
+  await expect(motion).toHaveAttribute("aria-checked", "false");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await expect(motion).toHaveAttribute("aria-checked", "false");
+  await page.getByRole("button", { name: "Usa impostazioni del dispositivo" }).click();
+  await expect(motion).toHaveAttribute("aria-checked", "true");
+});
+
+test("the motion switch still works when file-origin storage is unavailable", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "localStorage", {
+      get() { throw new DOMException("Storage unavailable for this origin", "SecurityError"); },
+    });
+  });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto(entryURL);
+  const motion = page.getByRole("switch", { name: "Animazioni con palloncini" });
+  await expect(motion).toHaveAttribute("aria-checked", "false");
+  await motion.click();
+  await expect(motion).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("button", { name: "Allacciate i vostri palloncini!" }).press("Enter");
+  await expect(page.locator(".journey-flight")).toBeVisible();
+  await expect(page.locator("h3")).toHaveText(level1Questions[0].question);
+  await settled(page);
+});
+
+test("downloaded file uses a classic inline script, embedded fonts and no URL-based SVG filters", async ({ page }) => {
+  test.skip(!entryURL.startsWith("file:"), "Standalone file only");
+  await page.goto(entryURL);
+  await expect(page.locator('meta[name="quiz-version"]')).toHaveAttribute("content", "2-offline");
+  expect(await page.locator('script[type="module"], script[src], link[href]').count()).toBe(0);
+  expect(await page.locator("script").count()).toBe(1);
+  expect(page.frames()).toHaveLength(1);
+  const resources = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return {
+      fonts: document.fonts.check('600 24px Fredoka') && document.fonts.check('800 24px Nunito'),
+      pictures: Array.from(document.images).every((image) => image.complete && image.naturalWidth > 0 && image.src.startsWith("data:")),
+      fragments: document.documentElement.outerHTML.includes("url(#"),
+    };
+  });
+  expect(resources).toEqual({ fonts: true, pictures: true, fragments: false });
+});

@@ -196,7 +196,17 @@
 /* No flying objects or long waits for people who prefer less movement. */
 .journey-reduced .journey-flight { display: none; }
 .journey-reduced .journey-screen { animation: none; transform: none; }
-@media (prefers-reduced-motion: reduce) {
-  .journey-flight { display: none; }
-  .journey-screen { animation: none !important; transform: none !important; }
+
+.motion-control { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 430px; text-align: center; }
+.motion-toggle {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 10px 16px; border: 3px solid #5c3317; border-radius: 99px;
+  background: #fff6dc; color: #3d1f0a; font-size: 16px; font-weight: 800; cursor: pointer;
+  box-shadow: 0 3px 0 #5c3317;
 }
+.motion-toggle:hover { background: #fff1c9; }
+.motion-toggle-track { display: flex; align-items: center; width: 36px; height: 22px; border-radius: 99px; background: #bca58b; padding: 3px; }
+.motion-toggle-track span { width: 16px; height: 16px; border-radius: 50%; background: white; box-shadow: 0 1px 2px #3d1f0a40; }
+.motion-toggle[aria-checked="true"] .motion-toggle-track { background: #2a9d8f; justify-content: flex-end; }
+.motion-help { padding: 6px 12px; border-radius: 12px; background: #fff6dced; color: #5c3317; font-size: 14px; line-height: 1.4; }
+.motion-reset { border: 0; padding: 4px 10px; border-radius: 10px; background: #fff6dced; color: #5c3317; font-size: 12px; text-decoration: underline; cursor: pointer; }

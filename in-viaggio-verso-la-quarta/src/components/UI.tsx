@@ -140,12 +140,8 @@ export function ExplorerBadge({
 }) {
   return (
     <svg viewBox="0 0 220 260" width={size} height={size * 1.18} role="img" aria-label="Distintivo di Esploratore Esperto">
-      <defs>
-        <filter id="badgeShadow" x="-10%" y="-10%" width="120%" height="130%">
-          <feDropShadow dx="0" dy="4" stdDeviation="3" floodOpacity="0.35" />
-        </filter>
-      </defs>
-      <g filter="url(#badgeShadow)">
+      {/* No URL-based SVG resource: local files have opaque security origins. */}
+      <g style={{ filter: "drop-shadow(0 4px 3px rgb(0 0 0 / 35%))" }}>
         <path d="M70 188 L110 248 L150 188 Z" fill={ribbon} stroke="#3d1f0a" strokeWidth="5" />
         <path d="M90 198 L110 228 L130 198 Z" fill="#fff6dc" stroke="#3d1f0a" strokeWidth="3" />
         <circle cx="110" cy="110" r="100" fill={ring} stroke="#3d1f0a" strokeWidth="6" />
