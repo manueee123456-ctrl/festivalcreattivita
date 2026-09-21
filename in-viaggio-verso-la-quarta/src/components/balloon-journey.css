@@ -1,0 +1,202 @@
+/* All movement uses compositor-friendly transforms and opacity. No animation
+   libraries, external artwork or per-frame JavaScript are needed. */
+.balloon-journey {
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;
+}
+
+.journey-screen { transform-origin: 50% 32vh; }
+.journey-screen[data-phase="departing"] {
+  pointer-events: none;
+  animation: journey-scene-out var(--journey-departure) cubic-bezier(.5, 0, .7, .5) both;
+}
+.journey-screen[data-phase="arriving"] {
+  pointer-events: none;
+  animation: journey-scene-in var(--journey-arrival) cubic-bezier(.18, .8, .28, 1) both;
+}
+
+.journey-flight {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+.journey-sky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #81cefa, #d6f1ff 62%, #f8fcff);
+  animation: journey-sky-wash var(--journey-duration) ease both;
+}
+.journey-cloud {
+  position: absolute;
+  left: -15%;
+  bottom: -45vh;
+  width: 130%;
+  height: 65vh;
+  animation: journey-cloud-rise var(--journey-duration) ease-in-out both;
+}
+.journey-cloud-far { opacity: .7; left: -30%; width: 160%; }
+.journey-cloud-near { animation-delay: 90ms; }
+
+.journey-free-balloon {
+  position: absolute;
+  bottom: -230px;
+  width: clamp(30px, 7vw, var(--balloon-size));
+  animation: journey-balloon-rise calc(var(--journey-duration) - var(--delay)) cubic-bezier(.25, .5, .45, 1) var(--delay) both;
+  will-change: transform;
+}
+.journey-balloon-body {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1.23;
+  border-radius: 50% 50% 47% 47% / 43% 43% 57% 57%;
+  border: 2px solid #3d1f0a;
+  background: var(--balloon-color);
+  box-shadow: inset -9px -11px 0 #3d1f0a21, 4px 9px 0 #3d1f0a0d;
+}
+.journey-balloon-body::before {
+  content: "";
+  position: absolute;
+  top: 15%; left: 20%;
+  width: 20%; height: 30%;
+  border-radius: 50%;
+  background: #ffffff80;
+  transform: rotate(25deg);
+}
+.journey-balloon-body::after {
+  content: "";
+  position: absolute;
+  bottom: -9px; left: calc(50% - 6px);
+  width: 12px; height: 10px;
+  background: var(--balloon-color);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.journey-string { width: 100%; height: 95px; margin-top: 6px; opacity: .7; }
+
+.journey-carrier {
+  position: absolute;
+  top: 47%; left: 50%;
+  width: clamp(260px, 36vw, 390px);
+  transform: translate(-50%, -50%);
+}
+.journey-carrier-flight {
+  animation: journey-carry var(--journey-duration) linear both;
+  will-change: transform;
+}
+.journey-bouquet { display: block; width: 100%; overflow: visible; }
+.journey-ticket {
+  position: relative;
+  width: 84%;
+  margin: -7px auto 0;
+  padding: 17px 12px 16px;
+  border: 3px solid #5c3317;
+  border-radius: 18px 18px 25px 25px;
+  color: #3d1f0a;
+  background-color: #fff6dc;
+  background-image: radial-gradient(#5a32100d 1px, transparent 1px);
+  background-size: 5px 5px;
+  box-shadow: 0 5px 0 #5c3317, 0 15px 26px #3d1f0a1a;
+  text-align: center;
+}
+.journey-ticket::before, .journey-ticket::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #8b5a2b;
+}
+.journey-ticket::before { left: 30%; }
+.journey-ticket::after { right: 30%; }
+.journey-ticket-eyebrow {
+  display: block;
+  color: #a65321;
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.journey-ticket-title {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.5vw, 28px);
+  font-weight: 600;
+  line-height: 1.18;
+  text-wrap: balance;
+}
+.journey-ticket-trail { display: block; margin-top: 7px; font-size: 10px; color: #8b5a2b; }
+.journey-sparkle {
+  position: absolute;
+  width: var(--star-size); height: var(--star-size);
+  background: #ffcd57;
+  clip-path: polygon(50% 0, 63% 36%, 100% 50%, 63% 64%, 50% 100%, 37% 64%, 0 50%, 37% 36%);
+  animation: journey-twinkle calc(var(--journey-duration) - var(--delay)) ease var(--delay) both;
+}
+.journey-sparkle:nth-of-type(3n) { background: white; }
+
+@keyframes journey-scene-out {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  24% { transform: translateY(6px) scale(1.005); opacity: 1; }
+  100% { transform: translateY(-150px) rotate(-2deg) scale(.96); opacity: 0; }
+}
+@keyframes journey-scene-in {
+  from { transform: translateY(65px) scale(.97); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes journey-sky-wash {
+  0%, 100% { opacity: 0; }
+  22% { opacity: .25; }
+  43%, 53% { opacity: 1; }
+  72% { opacity: .35; }
+  91% { opacity: 0; }
+}
+@keyframes journey-cloud-rise {
+  0% { transform: translateY(20vh); opacity: 0; }
+  25% { opacity: .9; }
+  49% { transform: translateY(-62vh); opacity: .95; }
+  100% { transform: translateY(-160vh); opacity: 0; }
+}
+@keyframes journey-balloon-rise {
+  0% { transform: translate3d(0, 0, 0) rotate(var(--tilt)); opacity: 0; }
+  8% { opacity: 1; }
+  48% { transform: translate3d(calc(var(--drift) * -.4), -64vh, 0) rotate(calc(var(--tilt) * -.5)); opacity: 1; }
+  100% { transform: translate3d(var(--drift), calc(-100vh - 440px), 0) rotate(var(--tilt)); opacity: 1; }
+}
+@keyframes journey-carry {
+  0% { transform: translateY(85vh) rotate(-10deg) scale(.85); opacity: 0; }
+  8% { opacity: 1; }
+  26% { transform: translateY(8px) rotate(-3deg) scale(1); }
+  44% { transform: translateY(-5px) rotate(2deg) scale(1); }
+  62% { transform: translateY(-24px) rotate(-2deg) scale(1); }
+  100% { transform: translateY(calc(-100vh - 300px)) rotate(8deg) scale(.9); opacity: 1; }
+}
+@keyframes journey-twinkle {
+  0%, 12% { transform: translateY(45px) scale(0) rotate(0); opacity: 0; }
+  38%, 58% { opacity: 1; }
+  50% { transform: translateY(-20px) scale(1) rotate(50deg); }
+  100% { transform: translateY(-180px) scale(0) rotate(140deg); opacity: 0; }
+}
+
+@media (max-width: 540px) {
+  .journey-carrier { width: min(76vw, 310px); }
+  .journey-free-balloon { width: clamp(34px, 12vw, 65px); }
+  .journey-ticket-trail { font-size: 9px; }
+  .journey-balloon-back { display: none; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .journey-carrier { width: 225px; }
+  .journey-ticket { padding: 10px; }
+  .journey-ticket-title { font-size: 20px; }
+  .journey-ticket-trail { display: none; }
+}
+
+/* No flying objects or long waits for people who prefer less movement. */
+.journey-reduced .journey-flight { display: none; }
+.journey-reduced .journey-screen { animation: none; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .journey-flight { display: none; }
+  .journey-screen { animation: none !important; transform: none !important; }
+}
