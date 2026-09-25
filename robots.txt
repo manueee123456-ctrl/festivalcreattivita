@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://festivalcreattivita.netlify.app/sitemap.xml

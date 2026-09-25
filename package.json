@@ -1,0 +1,11 @@
+{
+  "name": "festival-creattivita",
+  "version": "1.0.0",
+  "description": "Festival della Didattica Creativa - sito web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "echo 'Static site - no build step required'"
+  },
+  "dependencies": {}
+}
