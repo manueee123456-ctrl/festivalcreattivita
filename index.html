@@ -5443,6 +5443,7 @@ async function joinWaitlist(activityId) {
   await wRef.set(waitlistData);
   showToast('📋 Aggiunto alla lista d\'attesa!');
 }
+window.joinWaitlist = joinWaitlist;
 
 // Controlla lista d'attesa quando si libera un posto
 async function checkWaitlist(activityId) {
@@ -5832,6 +5833,7 @@ function switchPage(name) {
   // Save current page
   sessionStorage.setItem('fdc_page', name);
 }
+window.switchPage = switchPage;
 
 // Restore page on reload
 (function() {
@@ -8065,8 +8067,8 @@ function openCookiePrefs(){
 <script>
 (function(){
   const books=document.querySelector('.se2-books');let current=110,target=110,frame=0;
-  function updateTarget(){const max=document.documentElement.scrollHeight-innerHeight,progress=max>0?scrollY/max:0;document.documentElement.style.setProperty('--trail-progress',(progress*100).toFixed(2)+'%');if(innerWidth>900){target=70+progress*Math.max(0,innerHeight-570);books.style.setProperty('--books-x',(Math.sin(progress*12.56)*24).toFixed(1)+'px');books.style.setProperty('--books-tilt',(Math.sin(progress*6.28)*4).toFixed(1)+'deg');if(!frame)frame=requestAnimationFrame(follow)}}
-  function follow(){current+=(target-current)*.075;books.style.setProperty('--books-y',current.toFixed(1)+'px');frame=Math.abs(target-current)>.15?requestAnimationFrame(follow):0}
+  function updateTarget(){const max=document.documentElement.scrollHeight-innerHeight,progress=max>0?scrollY/max:0;document.documentElement.style.setProperty('--trail-progress',(progress*100).toFixed(2)+'%');if(innerWidth>900 && books){target=70+progress*Math.max(0,innerHeight-570);books.style.setProperty('--books-x',(Math.sin(progress*12.56)*24).toFixed(1)+'px');books.style.setProperty('--books-tilt',(Math.sin(progress*6.28)*4).toFixed(1)+'deg');if(!frame)frame=requestAnimationFrame(follow)}}
+  function follow(){current+=(target-current)*.075;if(books)books.style.setProperty('--books-y',current.toFixed(1)+'px');frame=Math.abs(target-current)>.15?requestAnimationFrame(follow):0}
   addEventListener('scroll',updateTarget,{passive:true});addEventListener('resize',updateTarget,{passive:true});updateTarget();
   // Entrata cinematica: i quattro libri attraversano lo schermo e atterrano nella pila.
   if(innerWidth>900 && books && typeof Element.prototype.animate==='function'){
@@ -8127,7 +8129,7 @@ function openCookiePrefs(){
   }
   const io=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.remove('se2-ash-hidden');entry.target.classList.add('se2-ash-show');ashBurst(entry.target);io.unobserve(entry.target)}}),{threshold:.12,rootMargin:'0px 0px -5%'});
   function register(root=document){const nodes=[];if(root.matches&&root.matches(selector))nodes.push(root);if(root.querySelectorAll)root.querySelectorAll(selector).forEach(x=>nodes.push(x));nodes.forEach(el=>{if(el.dataset.ashReveal)return;el.dataset.ashReveal='1';el.classList.add('se2-ash-target','se2-ash-hidden');io.observe(el)})}
-  register();new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)register(n)}))).observe(document.getElementById('page-home'),{childList:true,subtree:true});
+  const pageHome=document.getElementById('page-home');if(pageHome){register();new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)register(n)}))).observe(pageHome,{childList:true,subtree:true});}
 })();
 </script><script src="assets/features-2027.js"></script>
 <script src="assets/step4-program-library.js"></script>
