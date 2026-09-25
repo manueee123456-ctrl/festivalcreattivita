@@ -1241,6 +1241,26 @@ body.dark .valigia-item{background:#1e1640;border-color:#3d2a6e;color:#c4b5fd;}
 
 /* ===== 
 <body><script>try{localStorage.setItem("fdc_anim","1");localStorage.setItem("fdc_dark","true")}catch(e){}</script>
+<script>
+// Critical function stubs - available immediately for external scripts
+window.joinWaitlist = function(activityId) { console.warn('joinWaitlist called before full init'); };
+window.switchPage = function(name) { console.warn('switchPage called before full init'); };
+window.openAuth = function() { console.warn('openAuth called before full init'); };
+window.showToast = function(msg) { console.log('Toast:', msg); };
+window.renderActivities = function() { console.warn('renderActivities called before full init'); };
+window.renderSportGrid = function() { console.warn('renderSportGrid called before full init'); };
+window.loadIntroData = function() { console.warn('loadIntroData called before full init'); };
+window.loadPrenotaTexts = function() { console.warn('loadPrenotaTexts called before full init'); };
+window.initPremiumMotion = function() { console.warn('initPremiumMotion called before full init'); };
+window.updateNavbar = function() { console.warn('updateNavbar called before full init'); };
+window.listenCounts = function() { console.warn('listenCounts called before full init'); };
+window.applyDarkMode = function() { console.warn('applyDarkMode called before full init'); };
+window.startCountdown = function() { console.warn('startCountdown called before full init'); };
+window.trackOnline = function() { console.warn('trackOnline called before full init'); };
+window.saveActivitiesToDatabase = function() { console.warn('saveActivitiesToDatabase called before full init'); };
+window.capFor = function(a) { return (a && typeof a.max === 'number' && a.max > 0) ? a.max : 15; };
+window.capFor = function(a) { return (a && typeof a.max === 'number' && a.max > 0) ? a.max : 15; };
+</script>
 <div class="se2-preview">STEP 1 · SECONDA EDIZIONE 2027</div>
 <div class="se2-bg" aria-hidden="true"><i></i><i></i><i></i></div>
 <div class="se2-books" aria-hidden="true">
