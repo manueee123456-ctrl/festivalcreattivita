@@ -4518,8 +4518,6 @@ if (location.protocol === 'http:' && location.hostname !== 'localhost' && locati
 
 // ==================== AUTENTICAZIONE (email via Netlify/Brevo) ====================
 const ADMIN_EMAIL     = 'manuel.magnani29@gmail.com';
-// Hash SHA-256 salato (nessun segreto o password in chiaro nel codice sorgente)
-const ADMIN_PASS_HASH = 'a675c001d7fe0be598d7a927b0fc8cfe9f16eb9ced759b097d674f2b83ed0c0d';
 
 let users       = JSON.parse(localStorage.getItem('fdc_users') || '[]');
 let currentUser = JSON.parse(localStorage.getItem('fdc_current') || 'null');

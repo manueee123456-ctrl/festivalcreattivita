@@ -1,5 +1,11 @@
 # Configurazione Netlify — cache ottimizzata per Core Web Vitals
 
+# L'email dell'admin principale è pubblica (mittente delle email OTP) e viene
+# usata dal frontend: la escludiamo dalla scansione dei segreti.
+# Tutti gli altri segreti (hash, token, chiavi) restano soggetti alla scansione.
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "ADMIN_EMAIL"
+
 [[headers]]
   for = "/assets/*"
   [headers.values]
