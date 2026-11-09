@@ -1397,6 +1397,191 @@ body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-be
   .sponsor-card:hover,.open-events-card:hover,.prenota-step:hover,.chisiamo-card:hover,.annunci-card:hover,.stat-card:hover { transform:none;box-shadow:inherit }
 }
 
+/* Refinement: existing palette, markup and application handlers are preserved. */
+:root { --ui-duration:220ms; --ui-ease:cubic-bezier(.22,1,.36,1); }
+.hero-content { max-width:1000px; margin-inline:auto; }
+.hero h1 { padding-block:.12em; text-wrap:balance; }
+.hero-desc { line-height:1.75; text-wrap:pretty; }
+.hero-dates { max-width:100%; flex-wrap:wrap; justify-content:center; }
+.help-banner span { min-width:0; overflow-wrap:anywhere; }
+.filters-section { padding-top:clamp(28px,4vw,48px); }
+.day-filters { gap:10px; }
+.activity-card { min-width:0; }
+.card-body { padding:22px; }
+.card-title { line-height:1.45; overflow-wrap:anywhere; text-wrap:pretty; }
+.card-meta { gap:8px; line-height:1.5; }
+.meta-tag { max-width:100%; overflow-wrap:anywhere; }
+.capacity-top { gap:8px; flex-wrap:wrap; }
+.day-btn,.book-btn { min-height:44px; transition:transform var(--ui-duration) var(--ui-ease),opacity var(--ui-duration) ease,box-shadow var(--ui-duration) ease,border-color var(--ui-duration) ease; }
+.book-btn:hover { transform:none; }
+.book-btn:not(:disabled):not(.full):not(.booked):active { transform:scale(.98); }
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid var(--purple); outline-offset:3px; }
+.toast { max-width:calc(100vw - 32px); white-space:normal; overflow-wrap:anywhere; text-align:center; line-height:1.5; }
+.cookie-pref-row { gap:16px; }
+.cookie-toggle { flex-shrink:0; }
+.cards-grid,.sport-grid,.sponsor-grid,.chisiamo-grid,.prenota-steps,.stat-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,var(--card-min,260px)),1fr)); }
+.cards-grid { --card-min:300px; gap:clamp(16px,2.5vw,26px); }
+.sport-grid { --card-min:280px; }
+.sponsor-grid { --card-min:150px; }
+.chisiamo-grid { --card-min:200px; }
+.prenota-steps { --card-min:180px; }
+.stat-grid { --card-min:160px; }
+.navbar { gap:12px; }
+.navbar-brand { flex:0 0 auto; }
+.navbar-right { min-width:0; flex-wrap:wrap; justify-content:flex-end; row-gap:6px; }
+.navbar-right > a { max-width:100%; }
+.navbar-right > a .email-nav-label { overflow:hidden; text-overflow:ellipsis; }
+.tab-bar { height:auto; min-height:64px; padding-bottom:env(safe-area-inset-bottom,0px); }
+.tab-btn { min-width:0; min-height:64px; transition:color var(--ui-duration) ease,background-color var(--ui-duration) ease; }
+.tab-btn .tab-label { max-width:100%; overflow-wrap:anywhere; line-height:1.2; }
+.page { padding-bottom:calc(88px + env(safe-area-inset-bottom,0px)); }
+.bookings-bar { bottom:calc(76px + env(safe-area-inset-bottom,0px)) !important; }
+.toast { bottom:calc(90px + env(safe-area-inset-bottom,0px)) !important; }
+.modal-overlay,.auth-overlay,.admin-overlay { padding:max(12px,env(safe-area-inset-top,0px)) 12px max(12px,env(safe-area-inset-bottom,0px)); }
+.modal,.auth-box,.admin-panel,.cookie-box { max-width:100%; }
+.modal-title,.admin-header-left h2,.sponsor-title { overflow-wrap:anywhere; }
+@keyframes premiumReveal { from { opacity:0;transform:translate3d(0,12px,0); } to { opacity:1;transform:translate3d(0,0,0); } }
+body.motion-ready:not(.no-anim) .motion-pending { filter:none; }
+body.motion-ready:not(.no-anim) .motion-visible { animation-duration:.42s; will-change:auto; }
+@media (hover:hover) and (pointer:fine) {
+  .activity-card:hover { transform:translateY(-4px); }
+}
+@media (hover:none) {
+  .activity-card:hover,.activity-card:hover .card-emoji,.day-btn:hover { transform:none; }
+}
+@media (max-width:600px) {
+  .navbar { padding:8px 12px; align-items:flex-start; }
+  .navbar-brand svg { width:36px; height:36px; }
+  .navbar-right { gap:6px; }
+  .navbar-right > a,.btn-nav-login,.btn-nav-logout,.btn-nav-admin { min-height:40px; display:inline-flex; align-items:center; justify-content:center; }
+  .btn-nav-login,.btn-nav-logout,.btn-nav-admin { padding-inline:10px; }
+  .tab-btn .tab-label { font-size:clamp(.52rem,2vw,.62rem); letter-spacing:0; }
+  .tab-btn.active .tab-icon { transform:translateY(-2px) scale(1.08); }
+  .modal-header-body,.modal-body,.modal-footer { padding-inline:18px; }
+  .admin-header { padding:20px 16px; gap:12px; flex-wrap:wrap; }
+  .card-body { padding:18px; }
+  .hero-dates { padding:10px 16px; line-height:1.5; }
+  .day-btn { padding-inline:14px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  body.motion-ready:not(.no-anim) .motion-visible { animation:none!important; }
+}
+
+/* 2026 visual system. Original brand colours and functional selectors stay intact. */
+:root {
+  --surface:var(--white);
+  --line:rgba(168,85,247,.17);
+  --shadow-sm:0 8px 24px rgba(30,27,75,.055);
+  --shadow-md:0 18px 48px rgba(30,27,75,.10);
+  --radius-card:22px;
+  --content-width:1160px;
+}
+body { line-height:1.55; text-rendering:optimizeLegibility; }
+body:not(.dark) { background:linear-gradient(180deg,#fdf4ff 0%,#ffffff 34%,#fdf4ff 100%); }
+button,a,input,textarea,select { -webkit-tap-highlight-color:transparent; }
+button { font-family:'Nunito',sans-serif; }
+
+/* Navigation and opening composition */
+.navbar { min-height:76px; padding-inline:clamp(16px,3vw,48px); box-shadow:0 8px 30px rgba(30,27,75,.04); }
+.navbar-brand { gap:10px; }
+.navbar-right { gap:10px; }
+.navbar-right > a,.btn-nav-login,.btn-nav-admin,.btn-nav-logout,.dark-btn { box-shadow:var(--shadow-sm); }
+.hero { padding:clamp(66px,8vw,120px) 24px clamp(82px,9vw,124px); isolation:isolate; }
+.hero::before { width:min(48vw,560px); height:min(48vw,560px); top:-25%; left:-12%; filter:blur(18px); }
+.hero::after { width:min(38vw,460px); height:min(38vw,460px); right:-9%; bottom:-28%; filter:blur(20px); }
+.hero-content { max-width:920px; }
+.festival-tag { padding:9px 18px; margin-bottom:24px; font-size:.72rem; letter-spacing:.13em; box-shadow:0 8px 24px rgba(168,85,247,.18); }
+.hero h1 { max-width:900px; margin-inline:auto; margin-bottom:16px; font-size:clamp(2.7rem,6.5vw,5.2rem); line-height:1.24; letter-spacing:-.035em; }
+.hero-sub { font-size:clamp(1.05rem,1.8vw,1.3rem); margin-bottom:14px; }
+.hero-desc { max-width:650px; font-size:clamp(.98rem,1.4vw,1.1rem); line-height:1.8; margin-bottom:28px; }
+.hero-dates { padding:12px 24px; border:1px solid var(--line); box-shadow:var(--shadow-sm); }
+.hero-patrocinio { max-width:min(100%,760px); }
+
+/* Program discovery */
+.filters-section { max-width:var(--content-width); margin-inline:auto; padding:clamp(44px,6vw,74px) 20px 20px; }
+.filters-section h2 { font-size:clamp(1.75rem,3vw,2.3rem); letter-spacing:-.035em; margin-bottom:24px; }
+.day-filters { gap:10px; }
+.day-btn { padding:10px 20px; border-color:var(--line); box-shadow:var(--shadow-sm); }
+.day-btn.active { box-shadow:0 9px 24px rgba(168,85,247,.22); }
+.activities-section { max-width:var(--content-width); padding:22px 20px 100px; }
+.day-group { margin-bottom:clamp(48px,6vw,78px); }
+.day-label { margin-bottom:24px; gap:16px; }
+.day-badge { width:58px; height:58px; border-radius:18px; box-shadow:0 9px 24px rgba(168,85,247,.2); }
+.day-title { font-size:clamp(1.15rem,2vw,1.45rem); letter-spacing:-.02em; }
+.day-divider { height:1px; }
+.cards-grid { gap:24px; }
+.activity-card { border:1px solid var(--line); border-radius:var(--radius-card); box-shadow:var(--shadow-sm); display:flex; flex-direction:column; }
+.activity-card:hover { box-shadow:var(--shadow-md); border-color:rgba(168,85,247,.32); transform:translateY(-4px); }
+.card-header { height:148px; }
+.card-emoji { font-size:3.6rem; }
+.card-body { display:flex; flex-direction:column; flex:1; padding:22px 24px 24px; }
+.card-category { letter-spacing:.12em; margin-bottom:8px; }
+.card-title { font-size:1.15rem; letter-spacing:-.018em; }
+.card-meta { margin-bottom:20px; }
+.card-body > .book-btn { margin-top:auto; }
+.meta-tag { padding:5px 11px; }
+.book-btn,.sport-card-btn { min-height:46px; box-shadow:0 8px 20px rgba(168,85,247,.15); }
+.book-btn:active,.sport-card-btn:active { transform:scale(.98); }
+
+/* Editorial sections and supporting cards */
+.prenota-section,.chisiamo-section { padding-block:clamp(70px,8vw,112px); }
+.prenota-inner,.chisiamo-inner { max-width:var(--content-width); }
+.prenota-title,.chisiamo-title,.sponsor-title { letter-spacing:-.025em; text-wrap:balance; }
+.prenota-sub,.chisiamo-desc,.sponsor-sub { max-width:690px; margin-inline:auto; line-height:1.8; }
+.prenota-steps { gap:18px; }
+.prenota-step { padding:28px 24px; border:1px solid var(--line); border-radius:var(--radius-card); box-shadow:var(--shadow-sm); }
+.prenota-step-num { width:42px; height:42px; margin-bottom:16px; }
+.prenota-step-title { font-size:1rem; }
+.prenota-step-text { font-size:.87rem; line-height:1.65; }
+.sport-grid { gap:22px; }
+.sport-card { border:1px solid var(--line); border-radius:var(--radius-card); box-shadow:var(--shadow-sm); padding:28px; }
+.sport-card:hover { transform:translateY(-4px); box-shadow:var(--shadow-md); }
+.sport-card-name { font-size:1.12rem; }
+.sport-card-desc { line-height:1.75; }
+.chisiamo-grid { gap:18px; }
+.chisiamo-card { padding:28px 22px; border-radius:var(--radius-card); }
+.chisiamo-card-title { font-size:1rem; }
+.chisiamo-card-text { font-size:.87rem; line-height:1.7; }
+.open-events-card,.sponsor-card { border-color:var(--line); border-radius:var(--radius-card); box-shadow:var(--shadow-sm); }
+.open-events-card { padding:24px 26px; }
+.sponsor-card { min-height:156px; padding:22px 16px; }
+.sponsor-page { max-width:var(--content-width); margin-inline:auto; }
+
+/* Layers and forms */
+.modal,.auth-box,.admin-panel,.cookie-box { border:1px solid var(--line); box-shadow:0 28px 80px rgba(30,27,75,.20); }
+.modal,.auth-box,.cookie-box { border-radius:24px; }
+.modal { max-width:min(500px,100%); }
+.auth-box { max-width:min(440px,100%); }
+.admin-panel { max-width:min(900px,100%); }
+.cookie-box { max-width:min(560px,100%); }
+.form-input,.form-select,.admin-input { min-height:46px; border-color:var(--line); background:var(--surface); }
+.form-input:focus,.form-select:focus,.admin-input:focus { box-shadow:0 0 0 4px rgba(168,85,247,.12); }
+.admin-nav-btn { white-space:nowrap; }
+.admin-content { line-height:1.6; }
+.settings-panel { box-shadow:var(--shadow-md); }
+.tab-bar { border-top-color:var(--line); box-shadow:0 -8px 32px rgba(30,27,75,.07); }
+.tab-btn.active .tab-icon { transform:translateY(-2px) scale(1.08); }
+.tab-btn::after { height:2px; }
+footer { padding:48px 20px calc(110px + env(safe-area-inset-bottom,0px)); line-height:1.8; }
+
+@media(max-width:640px) {
+  .hero { padding:60px 18px 72px; }
+  .hero h1 { font-size:clamp(2.4rem,10vw,3.5rem); }
+  .hero-patrocinio { flex-wrap:wrap; justify-content:center; }
+  .hero-patrocinio .hero-patro-sep { display:none; }
+  .filters-section { padding-top:46px; }
+  .activities-section { padding-inline:16px; }
+  .cards-grid,.sport-grid { gap:16px; }
+  .card-header { height:128px; }
+  .card-body { padding:20px; }
+  .day-label { gap:10px; }
+  .day-badge { width:50px; height:50px; }
+  .prenota-section,.chisiamo-section { padding-block:62px; }
+  .sport-card,.prenota-step { padding:22px; }
+  .navbar { min-height:64px; }
+}
+@media(hover:none) { .activity-card:hover,.sport-card:hover,.prenota-step:hover { transform:none; } }
+@media(prefers-reduced-motion:reduce) { .activity-card,.sport-card,.prenota-step,.day-btn,.tab-btn { transition:none!important; } }
 </style>
 <body>
 
