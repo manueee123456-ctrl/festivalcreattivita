@@ -6,7 +6,7 @@
 const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
 
 const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email';
-const FROM_EMAIL = 'manuel.magnani29@gmail.com';
+const FROM_EMAIL = process.env.ADMIN_EMAIL || '';
 const FROM_NAME = 'Festival della Didattica Creativa';
 
 export const handler = async (event) => {
@@ -25,7 +25,7 @@ export const handler = async (event) => {
   // purpose: 'register' (default) oppure 'reset' (recupero password)
   const isReset = (purpose === 'reset');
   // Email di test: reindirizza all'admin (non esiste davvero)
-  const TEST_ADMIN = 'manuel.magnani29@gmail.com';
+  const TEST_ADMIN = process.env.ADMIN_EMAIL || '';
   const isTest = (original_email || to_email || '').toLowerCase().startsWith('test.');
   const finalTo = isTest ? TEST_ADMIN : to_email;
   const finalName = isTest ? ((to_name||'') + ' [TEST ' + (original_email||to_email) + ']') : (to_name||'');

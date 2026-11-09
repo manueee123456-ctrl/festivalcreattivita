@@ -411,8 +411,8 @@ async function sessionTtlMs() {
 
 async function resolveCurrentRole(email) {
   email = String(email || '').trim().toLowerCase();
-  const mainAdminEmail = env('ADMIN_EMAIL', 'manuel.magnani29@gmail.com').toLowerCase();
-  if (email === mainAdminEmail) return 'admin';
+  const mainAdminEmail = env('ADMIN_EMAIL', '').toLowerCase();
+  if (mainAdminEmail && email === mainAdminEmail) return 'admin';
   for (const [collection, role] of [['admins', 'admin'], ['controllers', 'controller'], ['helpers', 'helper']]) {
     const record = await getAppDocument(collection, email).catch(() => null);
     if (record && record.data) return role;
@@ -429,13 +429,13 @@ async function createSession(email, password) {
 
   await ensureSchema();
   const candidates = [];
-  const mainAdminEmail = env('ADMIN_EMAIL', 'manuel.magnani29@gmail.com').toLowerCase();
+  const mainAdminEmail = env('ADMIN_EMAIL', '').toLowerCase();
   const profileRecord = await findUserRecord(email).catch(() => null);
   const profile = profileRecord?.data || null;
 
   // Per l'admin principale accetta prima la password aggiornata su Turso,
   // poi l'hash di emergenza configurato nelle variabili Netlify.
-  if (email === mainAdminEmail) {
+  if (mainAdminEmail && email === mainAdminEmail) {
     if (profile?.passHash) candidates.push({ hash: profile.passHash, role: 'admin' });
     if (env('ADMIN_PASS_HASH')) candidates.push({ hash: env('ADMIN_PASS_HASH'), role: 'admin' });
   } else {
