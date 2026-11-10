@@ -1758,8 +1758,124 @@ body.dark .tab-btn.active { color:#f2d9a4; }
   .prenota-step-num { margin:0 auto 18px; }
 }
 @media(prefers-reduced-motion:reduce) { .library-spark { animation:none; } }
+
+/* Interactive collection: book, activity covers and personal tickets. */
+#mainContent { display:flex; flex-direction:column; }
+#mainContent > .page { order:0; }
+#mainContent > footer { order:1; }
+.sponsor-hero .chisiamo-patrocinio { background:var(--paper); border-color:var(--gold); }
+.sponsor-hero .chisiamo-patrocinio span { color:var(--text); }
+.footer-credit,.footer-credit b { color:#d8cbe0!important; }
+.hero { display:block; min-height:0; text-align:center; padding:38px 22px 90px; }
+.hero-content { width:100%; max-width:930px; margin:0 auto; }
+.hero-content::before { margin:0 auto 24px; }
+.hero h1 { font-size:clamp(2.8rem,6vw,5.4rem); line-height:1.12; margin:0 auto 22px; }
+.hero-desc { margin:0 auto 26px; }
+.hero-patrocinio { margin:18px auto 0; }
+.hero-content #countdown,.hero-content > div[style*="justify-content:center"] { justify-content:center!important; }
+.hero::before,.hero::after { display:none; }
+.library-scene { position:relative; width:min(100%,440px); height:280px; margin:0 auto 18px; overflow:visible; opacity:1; perspective:1100px; }
+.library-scene > :not(.grimoire),.library-scene::before,.library-scene::after { display:none; }
+.grimoire { pointer-events:auto; position:absolute; width:180px; height:230px; left:50%; top:14px; margin-left:-90px; transform-style:preserve-3d; transform:rotateX(calc(-12deg + var(--rx,0deg))) rotateY(calc(-25deg + var(--ry,0deg))) rotateZ(-7deg); transition:transform .35s ease; filter:drop-shadow(18px 28px 18px rgba(0,0,0,.35)); }
+.grimoire-cover { position:absolute; inset:0; transform:translateZ(20px); background:linear-gradient(135deg,#614064,#2c1c3e 65%); border:2px solid #d5ad6a; border-radius:3px 12px 12px 3px; box-shadow:inset 0 0 0 9px #39234f,inset 0 0 0 10px #b78d50; display:flex; align-items:center; justify-content:space-evenly; flex-direction:column; color:#f3dbac; text-align:center; }
+.grimoire-cover span { font:700 18px/1.3 Georgia,serif; letter-spacing:.12em; }
+.grimoire-cover b { font-size:72px; line-height:1; text-shadow:0 0 28px rgba(242,207,132,.5); }
+.grimoire-cover small { font:italic 12px Georgia,serif; }
+.grimoire-pages { position:absolute; inset:5px -12px 5px 6px; background:repeating-linear-gradient(0deg,#f2dfb9 0 2px,#c0a67c 2px 3px); transform:translateZ(5px); border-radius:4px 10px 10px 4px; box-shadow:0 0 0 5px #382344; }
+.grimoire::before { content:''; position:absolute; width:30px; height:100%; left:-15px; background:linear-gradient(90deg,#24162f,#694565,#35203f); transform:rotateY(90deg); border:1px solid #b78d50; }
+.booking-intro { max-width:1120px; margin:0 auto; padding:64px 24px 38px; display:grid; grid-template-columns:1.5fr 1fr; align-items:center; gap:64px; perspective:1200px; }
+.chapter-label { color:var(--purple); letter-spacing:.18em; font-size:.68rem; font-weight:900; }
+.booking-intro h2 { font:700 clamp(2.2rem,4vw,3.8rem)/1.1 Georgia,serif; letter-spacing:-.045em; margin:16px 0; }
+.booking-intro p { color:#6a5870; max-width:430px; }
+.booking-path { display:flex; flex-wrap:wrap; gap:18px; list-style:none; margin-top:24px; font-size:.8rem; }
+.booking-path li { display:flex; gap:7px; align-items:center; }
+.booking-path b { color:var(--purple); border:1px solid var(--gold); border-radius:50%; width:29px; height:29px; display:grid; place-items:center; font-size:.65rem; }
+.booking-ticket { padding:26px; background:linear-gradient(125deg,#38234c,#63406d); border:1px solid var(--gold); color:#f5e4c5; border-radius:18px; transform:rotateY(-15deg) rotateZ(5deg); box-shadow:10px 12px 0 #d6c4a4,20px 24px 40px rgba(33,23,53,.17); }
+.booking-ticket > span,.booking-ticket small { display:block; font-size:.63rem; letter-spacing:.16em; }
+.booking-ticket strong { display:block; font:700 2rem/1.2 Georgia,serif; margin:20px 0 10px; }
+.booking-ticket > div { font-size:54px; border-bottom:1px dashed rgba(245,228,197,.5); margin-bottom:16px; }
+#page-programma .search-wrap { max-width:1120px; padding-top:20px; }
+#page-programma .filters-section { padding-top:36px; }
+#page-programma .location-banner { max-width:1072px; margin:8px auto 30px; }
+.activity-card { border-left:7px solid var(--plum); box-shadow:5px 5px 0 #dfcfb4,10px 12px 0 rgba(189,145,80,.1),0 20px 30px rgba(33,23,53,.08); transition:transform .28s ease,box-shadow .28s ease; }
+.activity-card .card-header { position:relative; background-image:radial-gradient(circle at 50% 25%,rgba(255,255,255,.65),transparent 65%); }
+.activity-card .card-header::after { content:'✧'; display:block; position:absolute; right:15px; bottom:10px; color:rgba(57,35,79,.25); font-size:32px; }
+.activity-card .card-emoji { filter:drop-shadow(0 14px 7px rgba(33,23,53,.2)); transition:transform .3s ease; }
+.activity-card .card-body { background:linear-gradient(105deg,rgba(189,145,80,.06),transparent 24%); }
+.activity-card .card-body > div[style*="display:flex;gap:6px"] { margin-top:auto!important; padding-top:16px; }
+.activity-card .book-btn { min-height:46px; }
+.activity-card .bar-track { height:8px; box-shadow:inset 0 2px 3px rgba(33,23,53,.1); }
+.activity-card .bar-fill { transition:width .4s ease; }
+.bookings-panel { width:min(420px,calc(100vw - 32px)); border:1px solid var(--gold); box-shadow:8px 8px 0 rgba(189,145,80,.2),0 20px 60px rgba(33,23,53,.2); }
+.panel-header { background:linear-gradient(125deg,var(--plum),#63406d); font-family:Georgia,serif; font-size:1.15rem; }
+.panel-item { border:1px solid var(--line); border-radius:12px; margin:8px 0; box-shadow:3px 3px 0 rgba(189,145,80,.15); }
+.modal { box-shadow:9px 9px 0 rgba(189,145,80,.3),0 28px 80px rgba(0,0,0,.3); }
+.modal-header-body { border-left:5px solid var(--gold); margin:16px; padding:8px 14px; }
+.modal-body { padding-top:12px; }
+.sponsor-hero,.annunci-hero { padding:52px 24px; border-bottom:1px solid var(--line); }
+.annunci-hero { background:linear-gradient(135deg,var(--plum-deep),var(--plum)); }
+.annunci-hero h2 { font-family:Georgia,serif; }
+.sponsor-card,.annunci-card,.info-box { border:1px solid var(--line); box-shadow:5px 6px 0 rgba(189,145,80,.14),0 14px 28px rgba(33,23,53,.06); }
+.sponsor-card { min-height:180px; }
+.chisiamo-card { box-shadow:5px 6px 0 rgba(0,0,0,.15); }
+.annunci-tabs { gap:12px; padding-block:24px; }
+body.dark .booking-intro p { color:#cbbbd5; }
+body.dark .activity-card { box-shadow:5px 5px 0 #45334d,0 20px 30px rgba(0,0,0,.2); }
+@media(hover:hover) and (pointer:fine) {
+  body:not(.no-anim) .depth-active { transform:perspective(1000px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(-4px)!important; }
+  .depth-active .card-emoji { transform:translateY(-7px) scale(1.08); }
+}
+@media(max-width:700px) {
+  .library-scene { width:100%; height:250px; margin:0 auto 20px; }
+  .grimoire { top:12px; transform:scale(.9) rotateX(-12deg) rotateY(-25deg) rotateZ(-7deg); }
+  .booking-intro { padding:38px 20px 32px; grid-template-columns:1fr; gap:28px; }
+  .booking-ticket { max-width:300px; width:100%; margin:0 auto 12px; padding:20px; transform:rotateY(-10deg) rotateZ(3deg); }
+  .booking-ticket strong { font-size:1.6rem; margin-top:14px; }
+  .booking-ticket > div { font-size:34px; }
+  #page-programma .location-banner { margin-inline:16px; }
+  .cards-grid { gap:26px; }
+  .bookings-panel { right:-8px; }
+}
+@media(prefers-reduced-motion:reduce) { .depth-active { transform:none!important; } }
 </style>
 <body>
+<script data-festival-depth>
+// Presentation-only pointer feedback; no application state or network access.
+(() => {
+  const fine = matchMedia('(hover:hover) and (pointer:fine)');
+  const reduced = matchMedia('(prefers-reduced-motion:reduce)');
+  const selector = '.activity-card,.sponsor-card,.annunci-card,.grimoire';
+  let active = null, frame = 0, point = null;
+  const reset = () => {
+    if (active) {
+      active.classList.remove('depth-active');
+      active.style.removeProperty('--rx'); active.style.removeProperty('--ry');
+    }
+    active = null;
+    cancelAnimationFrame(frame); frame = 0;
+  };
+  document.addEventListener('pointermove', event => {
+    if (!fine.matches || reduced.matches || document.body.classList.contains('no-anim')) { reset(); return; }
+    const next = event.target.closest(selector);
+    if (next !== active) { reset(); active = next; }
+    if (!active) return;
+    point = { x:event.clientX, y:event.clientY };
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      if (!active || !active.isConnected) { reset(); return; }
+      const rect = active.getBoundingClientRect();
+      active.style.setProperty('--rx', ((.5-(point.y-rect.top)/rect.height)*5).toFixed(2)+'deg');
+      active.style.setProperty('--ry', (((point.x-rect.left)/rect.width-.5)*7).toFixed(2)+'deg');
+      if (!active.matches('.grimoire')) active.classList.add('depth-active');
+    });
+  }, {passive:true});
+  document.addEventListener('pointerout', event => { if (active && !active.contains(event.relatedTarget)) reset(); });
+  window.addEventListener('blur', reset);
+  reduced.addEventListener('change', reset);
+  fine.addEventListener('change', reset);
+})();
+</script>
 
 <!-- ===== BANNER ASSISTENZA (EMAIL) ===== -->
 <div class="help-banner" id="helpBanner">
@@ -2755,6 +2871,7 @@ body.dark .tab-btn.active { color:#f2d9a4; }
 <div class="page active" id="page-home">
 <div class="hero">
   <div class="library-scene" aria-hidden="true">
+    <div class="grimoire"><div class="grimoire-pages"></div><div class="grimoire-cover"><span>FESTIVAL<br>CREATTIVITÀ</span><b>✦</b><small>Il libro delle possibilità</small></div></div>
     <div class="library-arch"><div class="library-door"><span class="library-moon"></span><span class="library-stairs"></span></div></div>
     <div class="library-books library-books-left"></div>
     <div class="library-books library-books-right"></div>
@@ -2892,6 +3009,11 @@ body.dark .tab-btn.active { color:#f2d9a4; }
 
 <!-- ===PAGE 2: PROGRAMMA=== -->
 <div class="page" id="page-programma">
+
+<section class="booking-intro" aria-labelledby="bookingIntroTitle">
+  <div><span class="chapter-label">IL TUO PROSSIMO CAPITOLO</span><h2 id="bookingIntroTitle">Scegli un'esperienza.<br>Falla diventare tua.</h2><p>Esplora i laboratori, trova il tuo giorno e prenota il tuo posto.</p><ol class="booking-path"><li><b>01</b> Esplora</li><li><b>02</b> Scegli</li><li><b>03</b> Prenota</li></ol></div>
+  <div class="booking-ticket" aria-hidden="true"><span>PASS DEL FESTIVAL</span><strong>La tua prossima<br>scoperta</strong><div>✦</div><small>2 — 4 SETTEMBRE · MIRAMARE</small></div>
+</section>
 
 <!-- SEARCH BAR -->
 <div class="search-wrap">
