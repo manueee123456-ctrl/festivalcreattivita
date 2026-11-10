@@ -1582,6 +1582,113 @@ footer { padding:48px 20px calc(110px + env(safe-area-inset-bottom,0px)); line-h
 }
 @media(hover:none) { .activity-card:hover,.sport-card:hover,.prenota-step:hover { transform:none; } }
 @media(prefers-reduced-motion:reduce) { .activity-card,.sport-card,.prenota-step,.day-btn,.tab-btn { transition:none!important; } }
+
+/* LA BIBLIOTECA DELLE MERAVIGLIE — visual layer only. */
+:root {
+  --ink:#211735; --plum:#39234f; --plum-deep:#1d142c;
+  --parchment:#f8f1e5; --paper:#fffaf1; --gold:#bd9150;
+  --pink:#be739a; --purple:#76528e; --blue:#637b9b;
+  --bg:var(--parchment); --text:var(--ink); --white:var(--paper);
+  --line:rgba(92,62,96,.21);
+  --shadow-sm:0 8px 22px rgba(33,23,53,.08);
+  --shadow-md:0 20px 48px rgba(33,23,53,.16);
+  --radius-card:14px;
+}
+body:not(.dark) { background:var(--parchment); color:var(--ink); }
+body:not(.dark) .page { background:radial-gradient(circle at 50% 0%,rgba(189,145,80,.09),transparent 38%),var(--parchment); }
+.navbar { background:rgba(255,250,241,.96); border-bottom:1px solid rgba(189,145,80,.35); box-shadow:0 8px 25px rgba(33,23,53,.08); }
+.navbar-brand { filter:saturate(.75); }
+.navbar-brand span:first-child { letter-spacing:.02em; }
+.btn-nav-login,.book-btn,.btn-confirm,.btn-auth,.btn-save,.cookie-accept,.prenota-cta { background:linear-gradient(125deg,var(--plum),var(--purple))!important; color:#fff!important; }
+.btn-nav-admin { background:linear-gradient(125deg,#805e36,var(--gold))!important; }
+.hero { background:radial-gradient(ellipse at 50% 10%,rgba(189,145,80,.28),transparent 44%),linear-gradient(135deg,#211735 0%,#39234f 48%,#271c3b 100%); padding:clamp(72px,9vw,132px) 22px clamp(92px,10vw,150px); color:var(--paper); border-bottom:9px solid var(--gold); }
+.hero::before,.hero::after { content:'✦'; width:auto; height:auto; border-radius:0; background:none; font-family:Georgia,serif; color:rgba(239,211,154,.32); filter:none; line-height:1; animation:none!important; }
+.hero::before { font-size:clamp(5rem,18vw,16rem); top:2%; left:5%; }
+.hero::after { font-size:clamp(3rem,11vw,9rem); right:10%; bottom:5%; }
+.hero-content { max-width:920px; }
+.hero-content::before { content:'✧  UN FESTIVAL DA SCOPRIRE  ✧'; display:block; width:fit-content; max-width:100%; margin:0 auto 28px; padding:8px 20px; color:#ead6ae; border-top:1px solid rgba(234,214,174,.55); border-bottom:1px solid rgba(234,214,174,.55); font-size:.7rem; font-weight:900; letter-spacing:.2em; }
+.hero h1 { font-family:Georgia,'Times New Roman',serif; font-size:clamp(2.8rem,6.5vw,5.7rem); font-weight:700; line-height:1.13; letter-spacing:-.045em; background:none; -webkit-text-fill-color:var(--paper); color:var(--paper); text-shadow:0 5px 35px rgba(0,0,0,.22); }
+.hero-sub { color:#ead6ae; font-family:Georgia,serif; font-size:clamp(1.15rem,2vw,1.55rem); font-style:italic; font-weight:400; }
+.hero-desc { color:#eee5ef; font-size:1.05rem; max-width:660px; }
+.festival-tag { background:rgba(255,250,241,.11); border:1px solid rgba(234,214,174,.5); color:#f5dfb8; box-shadow:none; }
+.hero-dates { background:var(--paper); color:var(--plum); border:1px solid var(--gold); box-shadow:0 12px 30px rgba(0,0,0,.17); font-family:Georgia,serif; font-size:1.08rem; }
+.hero-patrocinio { background:rgba(255,250,241,.93); border:1px solid rgba(189,145,80,.65); box-shadow:0 14px 36px rgba(0,0,0,.14); }
+.hero-patrocinio div { color:var(--plum); }
+.hero-patrocinio strong { color:var(--purple); }
+.hero-content button[onclick*="scrollTo"] { background:var(--paper)!important; color:var(--plum)!important; border:1px solid var(--gold)!important; }
+.hero-content button[onclick*="scrollTo"]:hover { transform:translateY(-3px); box-shadow:0 10px 24px rgba(0,0,0,.2)!important; }
+.filters-section h2,.day-title,.prenota-title,.sponsor-title,.chisiamo-title { font-family:Georgia,'Times New Roman',serif; letter-spacing:-.035em; }
+.filters-section h2 { font-size:clamp(2rem,4vw,3rem); }
+.filters-section h2 em { background:none; -webkit-text-fill-color:var(--purple); }
+.day-btn { background:var(--paper); color:var(--plum); border-color:rgba(189,145,80,.43); box-shadow:0 5px 14px rgba(33,23,53,.05); }
+.day-btn:hover { border-color:var(--gold); }
+.day-btn.active { background:var(--plum); color:var(--paper); border-color:var(--gold); box-shadow:0 9px 22px rgba(33,23,53,.18); }
+.day-badge { background:var(--plum); border:1px solid var(--gold); box-shadow:0 8px 18px rgba(33,23,53,.16); }
+.day-divider { background:linear-gradient(90deg,var(--gold),transparent); }
+.search-bar { background:var(--paper); border-color:rgba(189,145,80,.48); box-shadow:var(--shadow-sm); }
+.search-bar:focus-within { border-color:var(--purple); box-shadow:0 0 0 4px rgba(118,82,142,.13); }
+.cat-filters { gap:8px; }
+.cat-btn { background:var(--paper); border-color:rgba(189,145,80,.35); color:var(--plum); min-height:34px; }
+.cat-btn:hover,.cat-btn.active { background:var(--plum); border-color:var(--gold); color:var(--paper); }
+.location-banner { background:var(--paper); border:1px solid var(--gold); box-shadow:var(--shadow-sm); }
+.location-banner .lb-title,.location-banner b { color:var(--plum); }
+.location-banner p { color:#4b3b4e; }
+.activity-card,.sport-card,.prenota-step,.open-events-card,.sponsor-card { background:var(--paper); border:1px solid rgba(189,145,80,.38); box-shadow:0 5px 0 rgba(189,145,80,.12),0 16px 28px rgba(33,23,53,.06); }
+.activity-card { border-radius:14px 22px 22px 14px; border-left:6px solid var(--plum); }
+.activity-card:hover,.sport-card:hover,.prenota-step:hover { border-color:var(--gold); box-shadow:0 6px 0 rgba(189,145,80,.2),0 22px 38px rgba(33,23,53,.14); }
+.card-header { border-bottom:1px solid rgba(189,145,80,.35); }
+.card-title,.sport-card-name,.prenota-step-title,.chisiamo-card-title { font-family:Georgia,'Times New Roman',serif; font-weight:700; }
+.card-title { font-size:1.25rem; }
+.card-category,.sport-card-cat { letter-spacing:.15em; }
+.meta-tag { background:#f0e8da; color:var(--plum); border:1px solid rgba(189,145,80,.22); }
+.book-btn { border-radius:9px; box-shadow:0 8px 18px rgba(33,23,53,.16); }
+.book-btn.booked { background:linear-gradient(135deg,#10b981,#059669)!important; }
+.book-btn.full { background:linear-gradient(135deg,#9ca3af,#6b7280)!important; }
+.sport-card { border-radius:14px; }
+.sport-card::before { background:var(--gold); }
+.sport-card-btn { border-radius:9px; }
+.prenota-section { background:linear-gradient(180deg,#f4ead9,#fffaf1); }
+.prenota-step { border-radius:13px; }
+.prenota-step-num { background:var(--plum); border:1px solid var(--gold); }
+.chisiamo-section { background:linear-gradient(135deg,#211735,#39234f 55%,#291c3a); border-top:6px solid var(--gold); }
+.chisiamo-card { border-color:rgba(234,214,174,.33); background:rgba(255,250,241,.08); }
+.chisiamo-card:hover { background:rgba(255,250,241,.14); }
+.chisiamo-card-accent { border-color:var(--gold); background:rgba(255,250,241,.1); }
+.chisiamo-icon-badge { background:var(--plum); border:1px solid var(--gold); }
+.tab-bar { background:rgba(33,23,53,.97); border-top:2px solid var(--gold); box-shadow:0 -8px 30px rgba(33,23,53,.22); }
+.tab-btn { color:#d8cbe0; }
+.tab-btn:hover { background:rgba(255,250,241,.08); }
+.tab-btn.active { color:#f2d9a4; }
+.tab-btn::after { background:var(--gold); }
+.modal,.auth-box,.admin-panel,.cookie-box,.settings-panel { background:var(--paper); border:1px solid var(--gold); }
+.form-input,.form-select,.admin-input { background:#fffdf7; border-color:#d6c2a3; }
+.form-input:focus,.form-select:focus,.admin-input:focus { border-color:var(--purple); box-shadow:0 0 0 4px rgba(118,82,142,.13); }
+.modal-footer,.modal-header { background:var(--paper); border-color:rgba(189,145,80,.3); }
+.toast { background:var(--plum-deep); border:1px solid var(--gold); }
+.cookie-box h3,.modal-title,.auth-title { font-family:Georgia,'Times New Roman',serif; }
+footer { background:var(--plum-deep); color:#e8dce9; border-top:6px solid var(--gold); }
+footer strong,footer a { color:#f2d9a4!important; }
+body.dark { --bg:#130f1c; --text:#f4e9f1; --white:#211a2d; --pink:#be739a; --purple:#a984c2; --line:rgba(189,145,80,.35); }
+body.dark .page { background:#130f1c; }
+body.dark .navbar,body.dark .activity-card,body.dark .sport-card,body.dark .prenota-step,body.dark .open-events-card,body.dark .sponsor-card { background:#211a2d!important; border-color:rgba(189,145,80,.42)!important; }
+body.dark .hero { background:radial-gradient(ellipse at 50% 10%,rgba(189,145,80,.16),transparent 44%),linear-gradient(135deg,#130f1c,#291c3a)!important; }
+body.dark .day-btn { background:#211a2d; color:#f4e9f1; }
+body.dark .day-btn.active { background:#76528e; }
+body.dark .tab-bar { background:#130f1c; border-color:var(--gold); }
+body.dark .tab-btn { color:#d8cbe0; }
+body.dark .tab-btn.active { color:#f2d9a4; }
+@media(max-width:640px) {
+  .hero { padding:68px 18px 84px; }
+  .hero-content::before { font-size:.6rem; letter-spacing:.11em; }
+  .hero h1 { font-size:clamp(2.55rem,10vw,3.6rem); }
+  .hero::before { left:-5%; top:4%; opacity:.5; }
+  .hero::after { right:-4%; bottom:2%; opacity:.5; }
+  .hero-patrocinio { margin-inline:auto; }
+  .cards-grid { gap:18px; }
+  .activity-card { border-left-width:5px; }
+  .tab-btn .tab-label { font-size:clamp(.52rem,2vw,.62rem); }
+}
+@media(prefers-reduced-motion:reduce) { .hero::before,.hero::after { animation:none!important; } }
 </style>
 <body>
 
