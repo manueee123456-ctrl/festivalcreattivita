@@ -1837,6 +1837,47 @@ body.dark .activity-card { box-shadow:5px 5px 0 #45334d,0 20px 30px rgba(0,0,0,.
   .bookings-panel { right:-8px; }
 }
 @media(prefers-reduced-motion:reduce) { .depth-active { transform:none!important; } }
+
+/* Landing strategy: a clear action first, verified information next. */
+body:not(.dark) .hero { background:#2c1f3b; }
+.hero { padding-top:18px; }
+.library-scene { height:148px; margin-bottom:10px; background:none; }
+.grimoire { top:-40px; transform:scale(.56) rotateX(calc(-12deg + var(--rx,0deg))) rotateY(calc(-25deg + var(--ry,0deg))) rotateZ(-7deg); }
+.hero-content::before { display:none; }
+.festival-tag { margin-bottom:14px; padding:6px 15px; }
+.hero h1 { font-size:clamp(2.65rem,5vw,4.5rem); margin-bottom:20px; }
+.hero-main-action { margin:0 0 22px; }
+.primary-booking-link { display:inline-flex; justify-content:center; align-items:center; gap:24px; background:#f1d4a0; color:#2c1f3b; border:1px solid #e6c28c; border-radius:50px; padding:14px 30px; min-height:50px; font:900 1rem 'Nunito',sans-serif; cursor:pointer; box-shadow:0 7px 0 rgba(0,0,0,.12); transition:transform .2s ease,box-shadow .2s ease; }
+.primary-booking-link:hover { transform:translateY(-2px); box-shadow:0 9px 0 rgba(0,0,0,.12); }
+.primary-booking-link:active { transform:translateY(2px); box-shadow:0 3px 0 rgba(0,0,0,.12); }
+.primary-booking-link span { font-size:1.3rem; }
+.hero-main-action p { color:#eee1ef; font-size:.8rem; margin-top:12px; }
+.hero-sub { font-size:1.15rem; }
+.hero-desc { font-size:1rem; max-width:620px; }
+.festival-faq { max-width:1120px; padding:76px 24px 90px; margin:auto; display:grid; grid-template-columns:1fr 1.3fr; gap:30px 60px; }
+.faq-heading h2 { font:700 clamp(2rem,3.5vw,3.2rem)/1.12 Georgia,serif; letter-spacing:-.035em; margin:16px 0; }
+.faq-heading p { color:#6a5870; max-width:300px; }
+.faq-list details { border-bottom:1px solid #cab79b; padding:0; }
+.faq-list details:first-child { border-top:1px solid #cab79b; }
+.faq-list summary { cursor:pointer; position:relative; padding:21px 32px 21px 0; font-weight:800; list-style:none; }
+.faq-list summary::-webkit-details-marker { display:none; }
+.faq-list summary::after { content:'+'; position:absolute; right:3px; top:16px; color:var(--purple); font-size:1.5rem; font-weight:400; }
+.faq-list details[open] summary::after { content:'−'; }
+.faq-list p { margin:0 0 24px; color:#5d4e64; line-height:1.8; }
+.faq-action { grid-column:2; }
+body.dark .faq-heading p,body.dark .faq-list p { color:#d5c7df; }
+@media(max-width:700px) {
+  .library-scene { height:120px; margin-bottom:0; }
+  .grimoire { top:-50px; transform:scale(.47) rotateX(-12deg) rotateY(-25deg) rotateZ(-7deg); }
+  .hero { padding-top:14px; }
+  .hero h1 { font-size:clamp(2.2rem,8.8vw,3.3rem); line-height:1.12; margin-bottom:18px; }
+  .festival-tag { margin-bottom:12px; font-size:.64rem; }
+  .hero-main-action { margin-bottom:24px; }
+  .hero-desc { font-size:1rem; }
+  .festival-faq { display:block; padding:50px 20px 70px; }
+  .faq-heading { margin-bottom:24px; }
+  .faq-action { margin-top:30px; }
+}
 </style>
 <body>
 <script data-festival-depth>
@@ -2881,6 +2922,7 @@ body.dark .activity-card { box-shadow:5px 5px 0 #45334d,0 20px 30px rgba(0,0,0,.
   <div class="hero-content">
     <div class="festival-tag">✨ Gruppo Creattività</div>
     <h1>Festival della<br>Didattica Creativa</h1>
+    <div class="hero-main-action"><button class="primary-booking-link" onclick="switchPage('programma')">Prenota ora <span aria-hidden="true">↗</span></button><p>Laboratori gratuiti · Miramare di Rimini</p></div>
     <p class="hero-sub">Prenota la tua attività preferita!</p>
     <p class="hero-desc">Tre giorni di esperienze straordinarie per ragazzi organizzate a Miramare: sport, arte, natura, cucina, teatro e tanto altro. Scegli le attività che ti incuriosiscono di più e prenota il tuo posto!</p>
     <div class="hero-dates"><span>📅</span> 2 — 4 Settembre 2026</div>
@@ -3005,6 +3047,16 @@ body.dark .activity-card { box-shadow:5px 5px 0 #45334d,0 20px 30px rgba(0,0,0,.
 </section>
 
 
+<section class="festival-faq" aria-labelledby="festivalFaqTitle">
+  <div class="faq-heading"><span class="chapter-label">PRIMA DI PRENOTARE</span><h2 id="festivalFaqTitle">Le risposte,<br>senza misteri.</h2><p>Le informazioni essenziali per organizzare la tua visita.</p></div>
+  <div class="faq-list">
+    <details><summary>Quanto costano i laboratori?</summary><p>I laboratori del Festival della Didattica Creativa sono gratuiti. Nel programma trovi le attività e i posti disponibili.</p></details>
+    <details><summary>Dove si svolgono le attività?</summary><p>Il 2 e il 3 settembre alla Scuola Di Duccio, in Viale Parigi 9 a Miramare. Il 4 settembre al Parco Spina Verde e alla Casina CiViVo. Controlla sempre il luogo indicato nella scheda del laboratorio.</p></details>
+    <details><summary>Come posso riservare un posto?</summary><p>Apri il programma, scegli il laboratorio e accedi al tuo account per prenotare. Alcune attività richiedono una prenotazione telefonica: il numero e le istruzioni sono indicati nella relativa scheda.</p></details>
+    <details><summary>Cosa devo mostrare all'ingresso?</summary><p>Per le prenotazioni online, conserva il tuo QR code personale e mostralo all'ingresso. Puoi consultare le tue prenotazioni dal programma.</p></details>
+  </div>
+  <div class="faq-action"><button class="primary-booking-link" onclick="switchPage('programma')">Prenota ora <span aria-hidden="true">↗</span></button></div>
+</section>
 </div><!-- /page-home -->
 
 <!-- ===PAGE 2: PROGRAMMA=== -->
