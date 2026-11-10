@@ -100,9 +100,7 @@
 
 
 
-<!-- Font originali del sito, ospitati localmente e precaricati: belli e senza salti. -->
-<link rel="preload" href="assets/fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="assets/fonts/pacifico-latin.woff2" as="font" type="font/woff2" crossorigin>
+<!-- Font locali caricati dai @font-face qui sotto, anche nell'anteprima file://. -->
 <!-- Leaflet e jsQR vengono caricati solo quando l'utente apre mappa o scanner. -->
 <style>
 @font-face { font-family:'Nunito'; src:url('assets/fonts/nunito-latin.woff2') format('woff2'); font-style:normal; font-weight:400 900; font-display:swap; }
@@ -1397,8 +1395,603 @@ body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-be
   .sponsor-card:hover,.open-events-card:hover,.prenota-step:hover,.chisiamo-card:hover,.annunci-card:hover,.stat-card:hover { transform:none;box-shadow:inherit }
 }
 
+/* Refinement: existing palette, markup and application handlers are preserved. */
+:root { --ui-duration:220ms; --ui-ease:cubic-bezier(.22,1,.36,1); }
+.hero-content { max-width:1000px; margin-inline:auto; }
+.hero h1 { padding-block:.12em; text-wrap:balance; }
+.hero-desc { line-height:1.75; text-wrap:pretty; }
+.hero-dates { max-width:100%; flex-wrap:wrap; justify-content:center; }
+.help-banner span { min-width:0; overflow-wrap:anywhere; }
+.filters-section { padding-top:clamp(28px,4vw,48px); }
+.day-filters { gap:10px; }
+.activity-card { min-width:0; }
+.card-body { padding:22px; }
+.card-title { line-height:1.45; overflow-wrap:anywhere; text-wrap:pretty; }
+.card-meta { gap:8px; line-height:1.5; }
+.meta-tag { max-width:100%; overflow-wrap:anywhere; }
+.capacity-top { gap:8px; flex-wrap:wrap; }
+.day-btn,.book-btn { min-height:44px; transition:transform var(--ui-duration) var(--ui-ease),opacity var(--ui-duration) ease,box-shadow var(--ui-duration) ease,border-color var(--ui-duration) ease; }
+.book-btn:hover { transform:none; }
+.book-btn:not(:disabled):not(.full):not(.booked):active { transform:scale(.98); }
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid var(--purple); outline-offset:3px; }
+.toast { max-width:calc(100vw - 32px); white-space:normal; overflow-wrap:anywhere; text-align:center; line-height:1.5; }
+.cookie-pref-row { gap:16px; }
+.cookie-toggle { flex-shrink:0; }
+.cards-grid,.sport-grid,.sponsor-grid,.chisiamo-grid,.prenota-steps,.stat-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,var(--card-min,260px)),1fr)); }
+.cards-grid { --card-min:300px; gap:clamp(16px,2.5vw,26px); }
+.sport-grid { --card-min:280px; }
+.sponsor-grid { --card-min:150px; }
+.chisiamo-grid { --card-min:200px; }
+.prenota-steps { --card-min:180px; }
+.stat-grid { --card-min:160px; }
+.navbar { gap:12px; }
+.navbar-brand { flex:0 0 auto; }
+.navbar-right { min-width:0; flex-wrap:wrap; justify-content:flex-end; row-gap:6px; }
+.navbar-right > a { max-width:100%; }
+.navbar-right > a .email-nav-label { overflow:hidden; text-overflow:ellipsis; }
+.tab-bar { height:auto; min-height:64px; padding-bottom:env(safe-area-inset-bottom,0px); }
+.tab-btn { min-width:0; min-height:64px; transition:color var(--ui-duration) ease,background-color var(--ui-duration) ease; }
+.tab-btn .tab-label { max-width:100%; overflow-wrap:anywhere; line-height:1.2; }
+.page { padding-bottom:calc(88px + env(safe-area-inset-bottom,0px)); }
+.bookings-bar { bottom:calc(76px + env(safe-area-inset-bottom,0px)) !important; }
+.toast { bottom:calc(90px + env(safe-area-inset-bottom,0px)) !important; }
+.modal-overlay,.auth-overlay,.admin-overlay { padding:max(12px,env(safe-area-inset-top,0px)) 12px max(12px,env(safe-area-inset-bottom,0px)); }
+.modal,.auth-box,.admin-panel,.cookie-box { max-width:100%; }
+.modal-title,.admin-header-left h2,.sponsor-title { overflow-wrap:anywhere; }
+@keyframes premiumReveal { from { opacity:0;transform:translate3d(0,12px,0); } to { opacity:1;transform:translate3d(0,0,0); } }
+body.motion-ready:not(.no-anim) .motion-pending { filter:none; }
+body.motion-ready:not(.no-anim) .motion-visible { animation-duration:.42s; will-change:auto; }
+@media (hover:hover) and (pointer:fine) {
+  .activity-card:hover { transform:translateY(-4px); }
+}
+@media (hover:none) {
+  .activity-card:hover,.activity-card:hover .card-emoji,.day-btn:hover { transform:none; }
+}
+@media (max-width:600px) {
+  .navbar { padding:8px 12px; align-items:flex-start; }
+  .navbar-brand svg { width:36px; height:36px; }
+  .navbar-right { gap:6px; }
+  .navbar-right > a,.btn-nav-login,.btn-nav-logout,.btn-nav-admin { min-height:40px; display:inline-flex; align-items:center; justify-content:center; }
+  .btn-nav-login,.btn-nav-logout,.btn-nav-admin { padding-inline:10px; }
+  .tab-btn .tab-label { font-size:clamp(.52rem,2vw,.62rem); letter-spacing:0; }
+  .tab-btn.active .tab-icon { transform:translateY(-2px) scale(1.08); }
+  .modal-header-body,.modal-body,.modal-footer { padding-inline:18px; }
+  .admin-header { padding:20px 16px; gap:12px; flex-wrap:wrap; }
+  .card-body { padding:18px; }
+  .hero-dates { padding:10px 16px; line-height:1.5; }
+  .day-btn { padding-inline:14px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  body.motion-ready:not(.no-anim) .motion-visible { animation:none!important; }
+}
+
+/* 2026 visual system. Original brand colours and functional selectors stay intact. */
+:root {
+  --surface:var(--white);
+  --line:rgba(168,85,247,.17);
+  --shadow-sm:0 8px 24px rgba(30,27,75,.055);
+  --shadow-md:0 18px 48px rgba(30,27,75,.10);
+  --radius-card:22px;
+  --content-width:1160px;
+}
+body { line-height:1.55; text-rendering:optimizeLegibility; }
+body:not(.dark) { background:linear-gradient(180deg,#fdf4ff 0%,#ffffff 34%,#fdf4ff 100%); }
+button,a,input,textarea,select { -webkit-tap-highlight-color:transparent; }
+button { font-family:'Nunito',sans-serif; }
+
+/* Navigation and opening composition */
+.navbar { min-height:76px; padding-inline:clamp(16px,3vw,48px); box-shadow:0 8px 30px rgba(30,27,75,.04); }
+.navbar-brand { gap:10px; }
+.navbar-right { gap:10px; }
+.navbar-right > a,.btn-nav-login,.btn-nav-admin,.btn-nav-logout,.dark-btn { box-shadow:var(--shadow-sm); }
+.hero { padding:clamp(66px,8vw,120px) 24px clamp(82px,9vw,124px); isolation:isolate; }
+.hero::before { width:min(48vw,560px); height:min(48vw,560px); top:-25%; left:-12%; filter:blur(18px); }
+.hero::after { width:min(38vw,460px); height:min(38vw,460px); right:-9%; bottom:-28%; filter:blur(20px); }
+.hero-content { max-width:920px; }
+.festival-tag { padding:9px 18px; margin-bottom:24px; font-size:.72rem; letter-spacing:.13em; box-shadow:0 8px 24px rgba(168,85,247,.18); }
+.hero h1 { max-width:900px; margin-inline:auto; margin-bottom:16px; font-size:clamp(2.7rem,6.5vw,5.2rem); line-height:1.24; letter-spacing:-.035em; }
+.hero-sub { font-size:clamp(1.05rem,1.8vw,1.3rem); margin-bottom:14px; }
+.hero-desc { max-width:650px; font-size:clamp(.98rem,1.4vw,1.1rem); line-height:1.8; margin-bottom:28px; }
+.hero-dates { padding:12px 24px; border:1px solid var(--line); box-shadow:var(--shadow-sm); }
+.hero-patrocinio { max-width:min(100%,760px); }
+
+/* Program discovery */
+.filters-section { max-width:var(--content-width); margin-inline:auto; padding:clamp(44px,6vw,74px) 20px 20px; }
+.filters-section h2 { font-size:clamp(1.75rem,3vw,2.3rem); letter-spacing:-.035em; margin-bottom:24px; }
+.day-filters { gap:10px; }
+.day-btn { padding:10px 20px; border-color:var(--line); box-shadow:var(--shadow-sm); }
+.day-btn.active { box-shadow:0 9px 24px rgba(168,85,247,.22); }
+.activities-section { max-width:var(--content-width); padding:22px 20px 100px; }
+.day-group { margin-bottom:clamp(48px,6vw,78px); }
+.day-label { margin-bottom:24px; gap:16px; }
+.day-badge { width:58px; height:58px; border-radius:18px; box-shadow:0 9px 24px rgba(168,85,247,.2); }
+.day-title { font-size:clamp(1.15rem,2vw,1.45rem); letter-spacing:-.02em; }
+.day-divider { height:1px; }
+.cards-grid { gap:24px; }
+.activity-card { border:1px solid var(--line); border-radius:var(--radius-card); box-shadow:var(--shadow-sm); display:flex; flex-direction:column; }
+.activity-card:hover { box-shadow:var(--shadow-md); border-color:rgba(168,85,247,.32); transform:translateY(-4px); }
+.card-header { height:148px; }
+.card-emoji { font-size:3.6rem; }
+.card-body { display:flex; flex-direction:column; flex:1; padding:22px 24px 24px; }
+.card-category { letter-spacing:.12em; margin-bottom:8px; }
+.card-title { font-size:1.15rem; letter-spacing:-.018em; }
+.card-meta { margin-bottom:20px; }
+.card-body > .book-btn { margin-top:auto; }
+.meta-tag { padding:5px 11px; }
+.book-btn,.sport-card-btn { min-height:46px; box-shadow:0 8px 20px rgba(168,85,247,.15); }
+.book-btn:active,.sport-card-btn:active { transform:scale(.98); }
+
+/* Editorial sections and supporting cards */
+.prenota-section,.chisiamo-section { padding-block:clamp(70px,8vw,112px); }
+.prenota-inner,.chisiamo-inner { max-width:var(--content-width); }
+.prenota-title,.chisiamo-title,.sponsor-title { letter-spacing:-.025em; text-wrap:balance; }
+.prenota-sub,.chisiamo-desc,.sponsor-sub { max-width:690px; margin-inline:auto; line-height:1.8; }
+.prenota-steps { gap:18px; }
+.prenota-step { padding:28px 24px; border:1px solid var(--line); border-radius:var(--radius-card); box-shadow:var(--shadow-sm); }
+.prenota-step-num { width:42px; height:42px; margin-bottom:16px; }
+.prenota-step-title { font-size:1rem; }
+.prenota-step-text { font-size:.87rem; line-height:1.65; }
+.sport-grid { gap:22px; }
+.sport-card { border:1px solid var(--line); border-radius:var(--radius-card); box-shadow:var(--shadow-sm); padding:28px; }
+.sport-card:hover { transform:translateY(-4px); box-shadow:var(--shadow-md); }
+.sport-card-name { font-size:1.12rem; }
+.sport-card-desc { line-height:1.75; }
+.chisiamo-grid { gap:18px; }
+.chisiamo-card { padding:28px 22px; border-radius:var(--radius-card); }
+.chisiamo-card-title { font-size:1rem; }
+.chisiamo-card-text { font-size:.87rem; line-height:1.7; }
+.open-events-card,.sponsor-card { border-color:var(--line); border-radius:var(--radius-card); box-shadow:var(--shadow-sm); }
+.open-events-card { padding:24px 26px; }
+.sponsor-card { min-height:156px; padding:22px 16px; }
+.sponsor-page { max-width:var(--content-width); margin-inline:auto; }
+
+/* Layers and forms */
+.modal,.auth-box,.admin-panel,.cookie-box { border:1px solid var(--line); box-shadow:0 28px 80px rgba(30,27,75,.20); }
+.modal,.auth-box,.cookie-box { border-radius:24px; }
+.modal { max-width:min(500px,100%); }
+.auth-box { max-width:min(440px,100%); }
+.admin-panel { max-width:min(900px,100%); }
+.cookie-box { max-width:min(560px,100%); }
+.form-input,.form-select,.admin-input { min-height:46px; border-color:var(--line); background:var(--surface); }
+.form-input:focus,.form-select:focus,.admin-input:focus { box-shadow:0 0 0 4px rgba(168,85,247,.12); }
+.admin-nav-btn { white-space:nowrap; }
+.admin-content { line-height:1.6; }
+.settings-panel { box-shadow:var(--shadow-md); }
+.tab-bar { border-top-color:var(--line); box-shadow:0 -8px 32px rgba(30,27,75,.07); }
+.tab-btn.active .tab-icon { transform:translateY(-2px) scale(1.08); }
+.tab-btn::after { height:2px; }
+footer { padding:48px 20px calc(110px + env(safe-area-inset-bottom,0px)); line-height:1.8; }
+
+@media(max-width:640px) {
+  .hero { padding:60px 18px 72px; }
+  .hero h1 { font-size:clamp(2.4rem,10vw,3.5rem); }
+  .hero-patrocinio { flex-wrap:wrap; justify-content:center; }
+  .hero-patrocinio .hero-patro-sep { display:none; }
+  .filters-section { padding-top:46px; }
+  .activities-section { padding-inline:16px; }
+  .cards-grid,.sport-grid { gap:16px; }
+  .card-header { height:128px; }
+  .card-body { padding:20px; }
+  .day-label { gap:10px; }
+  .day-badge { width:50px; height:50px; }
+  .prenota-section,.chisiamo-section { padding-block:62px; }
+  .sport-card,.prenota-step { padding:22px; }
+  .navbar { min-height:64px; }
+}
+@media(hover:none) { .activity-card:hover,.sport-card:hover,.prenota-step:hover { transform:none; } }
+@media(prefers-reduced-motion:reduce) { .activity-card,.sport-card,.prenota-step,.day-btn,.tab-btn { transition:none!important; } }
+
+/* LA BIBLIOTECA DELLE MERAVIGLIE — visual layer only. */
+:root {
+  --ink:#211735; --plum:#39234f; --plum-deep:#1d142c;
+  --parchment:#f8f1e5; --paper:#fffaf1; --gold:#bd9150;
+  --pink:#be739a; --purple:#76528e; --blue:#637b9b;
+  --bg:var(--parchment); --text:var(--ink); --white:var(--paper);
+  --line:rgba(92,62,96,.21);
+  --shadow-sm:0 8px 22px rgba(33,23,53,.08);
+  --shadow-md:0 20px 48px rgba(33,23,53,.16);
+  --radius-card:14px;
+}
+body:not(.dark) { background:var(--parchment); color:var(--ink); }
+body:not(.dark) .page { background:radial-gradient(circle at 50% 0%,rgba(189,145,80,.09),transparent 38%),var(--parchment); }
+.navbar { background:rgba(255,250,241,.96); border-bottom:1px solid rgba(189,145,80,.35); box-shadow:0 8px 25px rgba(33,23,53,.08); }
+.navbar-brand { filter:saturate(.75); }
+.navbar-brand span:first-child { letter-spacing:.02em; }
+.btn-nav-login,.book-btn,.btn-confirm,.btn-auth,.btn-save,.cookie-accept,.prenota-cta { background:linear-gradient(125deg,var(--plum),var(--purple))!important; color:#fff!important; }
+.btn-nav-admin { background:linear-gradient(125deg,#805e36,var(--gold))!important; }
+.hero { background:radial-gradient(ellipse at 50% 10%,rgba(189,145,80,.28),transparent 44%),linear-gradient(135deg,#211735 0%,#39234f 48%,#271c3b 100%); padding:clamp(72px,9vw,132px) 22px clamp(92px,10vw,150px); color:var(--paper); border-bottom:9px solid var(--gold); }
+.hero::before,.hero::after { content:'✦'; width:auto; height:auto; border-radius:0; background:none; font-family:Georgia,serif; color:rgba(239,211,154,.32); filter:none; line-height:1; animation:none!important; }
+.hero::before { font-size:clamp(5rem,18vw,16rem); top:2%; left:5%; }
+.hero::after { font-size:clamp(3rem,11vw,9rem); right:10%; bottom:5%; }
+.hero-content { max-width:920px; }
+.hero-content::before { content:'✧  UN FESTIVAL DA SCOPRIRE  ✧'; display:block; width:fit-content; max-width:100%; margin:0 auto 28px; padding:8px 20px; color:#ead6ae; border-top:1px solid rgba(234,214,174,.55); border-bottom:1px solid rgba(234,214,174,.55); font-size:.7rem; font-weight:900; letter-spacing:.2em; }
+.hero h1 { font-family:Georgia,'Times New Roman',serif; font-size:clamp(2.8rem,6.5vw,5.7rem); font-weight:700; line-height:1.13; letter-spacing:-.045em; background:none; -webkit-text-fill-color:var(--paper); color:var(--paper); text-shadow:0 5px 35px rgba(0,0,0,.22); }
+.hero-sub { color:#ead6ae; font-family:Georgia,serif; font-size:clamp(1.15rem,2vw,1.55rem); font-style:italic; font-weight:400; }
+.hero-desc { color:#eee5ef; font-size:1.05rem; max-width:660px; }
+.festival-tag { background:rgba(255,250,241,.11); border:1px solid rgba(234,214,174,.5); color:#f5dfb8; box-shadow:none; }
+.hero-dates { background:var(--paper); color:var(--plum); border:1px solid var(--gold); box-shadow:0 12px 30px rgba(0,0,0,.17); font-family:Georgia,serif; font-size:1.08rem; }
+.hero-patrocinio { background:rgba(255,250,241,.93); border:1px solid rgba(189,145,80,.65); box-shadow:0 14px 36px rgba(0,0,0,.14); }
+.hero-patrocinio div { color:var(--plum); }
+.hero-patrocinio strong { color:var(--purple); }
+.hero-content button[onclick*="scrollTo"] { background:var(--paper)!important; color:var(--plum)!important; border:1px solid var(--gold)!important; }
+.hero-content button[onclick*="scrollTo"]:hover { transform:translateY(-3px); box-shadow:0 10px 24px rgba(0,0,0,.2)!important; }
+.filters-section h2,.day-title,.prenota-title,.sponsor-title,.chisiamo-title { font-family:Georgia,'Times New Roman',serif; letter-spacing:-.035em; }
+.filters-section h2 { font-size:clamp(2rem,4vw,3rem); }
+.filters-section h2 em { background:none; -webkit-text-fill-color:var(--purple); }
+.day-btn { background:var(--paper); color:var(--plum); border-color:rgba(189,145,80,.43); box-shadow:0 5px 14px rgba(33,23,53,.05); }
+.day-btn:hover { border-color:var(--gold); }
+.day-btn.active { background:var(--plum); color:var(--paper); border-color:var(--gold); box-shadow:0 9px 22px rgba(33,23,53,.18); }
+.day-badge { background:var(--plum); border:1px solid var(--gold); box-shadow:0 8px 18px rgba(33,23,53,.16); }
+.day-divider { background:linear-gradient(90deg,var(--gold),transparent); }
+.search-bar { background:var(--paper); border-color:rgba(189,145,80,.48); box-shadow:var(--shadow-sm); }
+.search-bar:focus-within { border-color:var(--purple); box-shadow:0 0 0 4px rgba(118,82,142,.13); }
+.cat-filters { gap:8px; }
+.cat-btn { background:var(--paper); border-color:rgba(189,145,80,.35); color:var(--plum); min-height:34px; }
+.cat-btn:hover,.cat-btn.active { background:var(--plum); border-color:var(--gold); color:var(--paper); }
+.location-banner { background:var(--paper); border:1px solid var(--gold); box-shadow:var(--shadow-sm); }
+.location-banner .lb-title,.location-banner b { color:var(--plum); }
+.location-banner p { color:#4b3b4e; }
+.activity-card,.sport-card,.prenota-step,.open-events-card,.sponsor-card { background:var(--paper); border:1px solid rgba(189,145,80,.38); box-shadow:0 5px 0 rgba(189,145,80,.12),0 16px 28px rgba(33,23,53,.06); }
+.activity-card { border-radius:14px 22px 22px 14px; border-left:6px solid var(--plum); }
+.activity-card:hover,.sport-card:hover,.prenota-step:hover { border-color:var(--gold); box-shadow:0 6px 0 rgba(189,145,80,.2),0 22px 38px rgba(33,23,53,.14); }
+.card-header { border-bottom:1px solid rgba(189,145,80,.35); }
+.card-title,.sport-card-name,.prenota-step-title,.chisiamo-card-title { font-family:Georgia,'Times New Roman',serif; font-weight:700; }
+.card-title { font-size:1.25rem; }
+.card-category,.sport-card-cat { letter-spacing:.15em; }
+.meta-tag { background:#f0e8da; color:var(--plum); border:1px solid rgba(189,145,80,.22); }
+.book-btn { border-radius:9px; box-shadow:0 8px 18px rgba(33,23,53,.16); }
+.book-btn.booked { background:linear-gradient(135deg,#10b981,#059669)!important; }
+.book-btn.full { background:linear-gradient(135deg,#9ca3af,#6b7280)!important; }
+.sport-card { border-radius:14px; }
+.sport-card::before { background:var(--gold); }
+.sport-card-btn { border-radius:9px; }
+.prenota-section { background:linear-gradient(180deg,#f4ead9,#fffaf1); }
+.prenota-step { border-radius:13px; }
+.prenota-step-num { background:var(--plum); border:1px solid var(--gold); }
+.chisiamo-section { background:linear-gradient(135deg,#211735,#39234f 55%,#291c3a); border-top:6px solid var(--gold); }
+.chisiamo-card { border-color:rgba(234,214,174,.33); background:rgba(255,250,241,.08); }
+.chisiamo-card:hover { background:rgba(255,250,241,.14); }
+.chisiamo-card-accent { border-color:var(--gold); background:rgba(255,250,241,.1); }
+.chisiamo-icon-badge { background:var(--plum); border:1px solid var(--gold); }
+.tab-bar { background:rgba(33,23,53,.97); border-top:2px solid var(--gold); box-shadow:0 -8px 30px rgba(33,23,53,.22); }
+.tab-btn { color:#d8cbe0; }
+.tab-btn:hover { background:rgba(255,250,241,.08); }
+.tab-btn.active { color:#f2d9a4; }
+.tab-btn::after { background:var(--gold); }
+.modal,.auth-box,.admin-panel,.cookie-box,.settings-panel { background:var(--paper); border:1px solid var(--gold); }
+.form-input,.form-select,.admin-input { background:#fffdf7; border-color:#d6c2a3; }
+.form-input:focus,.form-select:focus,.admin-input:focus { border-color:var(--purple); box-shadow:0 0 0 4px rgba(118,82,142,.13); }
+.modal-footer,.modal-header { background:var(--paper); border-color:rgba(189,145,80,.3); }
+.toast { background:var(--plum-deep); border:1px solid var(--gold); }
+.cookie-box h3,.modal-title,.auth-title { font-family:Georgia,'Times New Roman',serif; }
+footer { background:var(--plum-deep); color:#e8dce9; border-top:6px solid var(--gold); }
+footer strong,footer a { color:#f2d9a4!important; }
+body.dark { --bg:#130f1c; --text:#f4e9f1; --white:#211a2d; --pink:#be739a; --purple:#a984c2; --line:rgba(189,145,80,.35); }
+body.dark .page { background:#130f1c; }
+body.dark .navbar,body.dark .activity-card,body.dark .sport-card,body.dark .prenota-step,body.dark .open-events-card,body.dark .sponsor-card { background:#211a2d!important; border-color:rgba(189,145,80,.42)!important; }
+body.dark .hero { background:radial-gradient(ellipse at 50% 10%,rgba(189,145,80,.16),transparent 44%),linear-gradient(135deg,#130f1c,#291c3a)!important; }
+body.dark .day-btn { background:#211a2d; color:#f4e9f1; }
+body.dark .day-btn.active { background:#76528e; }
+body.dark .tab-bar { background:#130f1c; border-color:var(--gold); }
+body.dark .tab-btn { color:#d8cbe0; }
+body.dark .tab-btn.active { color:#f2d9a4; }
+@media(max-width:640px) {
+  .hero { padding:68px 18px 84px; }
+  .hero-content::before { font-size:.6rem; letter-spacing:.11em; }
+  .hero h1 { font-size:clamp(2.55rem,10vw,3.6rem); }
+  .hero::before { left:-5%; top:4%; opacity:.5; }
+  .hero::after { right:-4%; bottom:2%; opacity:.5; }
+  .hero-patrocinio { margin-inline:auto; }
+  .cards-grid { gap:18px; }
+  .activity-card { border-left-width:5px; }
+  .tab-btn .tab-label { font-size:clamp(.52rem,2vw,.62rem); }
+}
+@media(prefers-reduced-motion:reduce) { .hero::before,.hero::after { animation:none!important; } }
+
+/* Cinematic chapter layout inspired by the supplied references. */
+.hero { min-height:760px; display:flex; align-items:center; text-align:left; padding:100px max(5vw,30px) 112px; overflow:hidden; }
+.hero::before { content:'01 / 04'; font-family:'Nunito',sans-serif; font-size:.7rem; font-weight:900; letter-spacing:.22em; color:#d8bc88; top:46px; left:max(5vw,30px); }
+.hero::after { content:'SCOPRI · CREA · GIOCA'; font-family:'Nunito',sans-serif; font-size:.66rem; font-weight:900; letter-spacing:.28em; color:#d8bc88; bottom:42px; right:max(5vw,30px); }
+.hero-content { width:min(55%,760px); max-width:none; margin:0; position:relative; z-index:2; }
+.hero-content::before { margin:0 0 28px; }
+.hero h1 { margin:0 0 26px; font-size:clamp(3.8rem,6.2vw,7rem); line-height:1.03; letter-spacing:-.065em; text-wrap:balance; }
+.hero-sub { margin:0 0 16px; }
+.hero-desc { margin:0 0 26px; max-width:620px; }
+.hero-dates { margin:0 0 16px; }
+.hero-patrocinio { margin:18px 0 0; max-width:600px; }
+.hero-content #countdown,.hero-content > div[style*="justify-content:center"] { justify-content:flex-start!important; }
+.hero-content > div[style*="justify-content:center"] { gap:12px!important; }
+.library-scene { position:absolute; z-index:1; inset:0 0 0 auto; width:50%; overflow:hidden; pointer-events:none; background:radial-gradient(ellipse at 54% 45%,rgba(218,176,99,.19),transparent 55%); }
+.library-scene::before { content:''; position:absolute; inset:8% 5% 12%; border:1px solid rgba(233,196,132,.3); border-radius:48% 48% 10px 10px / 28% 28% 10px 10px; box-shadow:inset 0 0 0 14px rgba(33,23,53,.24),inset 0 0 0 15px rgba(233,196,132,.22),0 0 60px rgba(189,145,80,.1); }
+.library-scene::after { content:''; position:absolute; left:0; right:0; bottom:0; height:22%; background:linear-gradient(180deg,transparent,#1b132a 72%); }
+.library-arch { position:absolute; inset:11% 16% 13%; border:18px solid #392943; border-bottom-width:24px; border-radius:48% 48% 5px 5px / 28% 28% 5px 5px; box-shadow:0 0 0 2px #a47c4c,0 0 0 22px rgba(68,44,67,.7),0 0 0 24px rgba(220,181,109,.55),inset 0 0 65px #120d20; overflow:hidden; background:radial-gradient(circle at 50% 38%,#896d7a 0%,#503850 35%,#21182e 74%); }
+.library-door { position:absolute; inset:8% 20% -4%; border:4px solid rgba(215,171,100,.63); border-bottom:0; border-radius:47% 47% 0 0 / 27% 27% 0 0; box-shadow:0 0 0 13px rgba(32,20,40,.75),0 0 0 15px rgba(215,171,100,.34),inset 0 0 50px rgba(246,203,113,.14); background:radial-gradient(ellipse at 52% 41%,rgba(245,206,139,.34),transparent 33%),linear-gradient(160deg,#251c37,#100d1c); }
+.library-door::before { content:'✧'; position:absolute; top:15%; left:50%; transform:translateX(-50%); font-family:Georgia,serif; color:#f4d9a2; font-size:clamp(3rem,6vw,6rem); text-shadow:0 0 25px #d7a963; }
+.library-moon { position:absolute; left:50%; top:37%; transform:translateX(-50%); width:38%; aspect-ratio:1; border-radius:50%; background:radial-gradient(circle at 35% 32%,#fff2cf,#d8ac72 65%,#936a51); box-shadow:0 0 40px rgba(245,206,139,.65),0 0 110px rgba(245,206,139,.23); }
+.library-moon::after { content:''; position:absolute; inset:0; border-radius:50%; background:linear-gradient(110deg,transparent 45%,rgba(36,22,42,.42)); }
+.library-stairs { position:absolute; bottom:0; left:-12%; width:124%; height:31%; background:repeating-linear-gradient(180deg,transparent 0 20px,rgba(205,164,103,.7) 21px 23px,rgba(24,17,33,.95) 24px 38px); clip-path:polygon(42% 0,58% 0,100% 100%,0 100%); }
+.library-books { position:absolute; z-index:2; width:27%; height:54%; bottom:12%; background:repeating-linear-gradient(90deg,#2d2134 0 10px,#a98055 11px 13px,#4c3548 14px 26px,#c29c65 27px 29px,#271b33 30px 39px); border:7px solid #201527; box-shadow:inset 0 0 60px rgba(0,0,0,.7),0 18px 34px rgba(0,0,0,.5); opacity:.9; }
+.library-books::after { content:''; position:absolute; inset:25% 0 auto; border-top:11px solid #201527; box-shadow:0 10px 0 #ae8050,0 125px 0 #201527,0 135px 0 #ae8050; }
+.library-books-left { left:0; transform:perspective(500px) rotateY(11deg); }
+.library-books-right { right:0; transform:perspective(500px) rotateY(-11deg); }
+.library-orbit { position:absolute; z-index:3; top:15%; right:13%; width:64%; aspect-ratio:1; border:1px solid rgba(239,204,144,.38); border-radius:50%; transform:rotate(-25deg) scaleY(.38); box-shadow:0 0 25px rgba(255,224,167,.1); }
+.library-spark { position:absolute; z-index:4; color:#f4d9a2; text-shadow:0 0 20px #e3b777; animation:libraryFloat 5s ease-in-out infinite alternate; }
+.library-spark-one { top:20%; left:20%; font-size:2rem; }
+.library-spark-two { top:53%; right:18%; font-size:3rem; animation-delay:1.3s; }
+@keyframes libraryFloat { from{transform:translateY(0);opacity:.6} to{transform:translateY(-14px);opacity:1} }
+.filters-section,.activities-section,.sponsor-page { position:relative; }
+.filters-section::before { content:'IL CATALOGO'; display:block; margin-bottom:10px; color:var(--purple); font-size:.69rem; font-weight:900; letter-spacing:.24em; }
+.cards-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr)); gap:26px; }
+.activity-card { min-height:360px; }
+.card-header { height:158px; }
+.card-emoji { font-size:4rem; }
+.day-group { padding-top:12px; }
+.day-label { border-bottom:1px solid rgba(189,145,80,.4); padding-bottom:18px; }
+.day-divider { display:none; }
+.prenota-steps { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.prenota-step { text-align:left; min-height:210px; }
+.prenota-step-num { margin:0 0 18px; }
+.chisiamo-section { position:relative; overflow:hidden; }
+.chisiamo-section::before { content:'✦'; position:absolute; right:-3%; top:-20%; font-size:28rem; line-height:1; color:rgba(234,214,174,.055); pointer-events:none; }
+@media(max-width:1000px) {
+  .hero { min-height:690px; }
+  .hero-content { width:62%; }
+  .library-scene { width:48%; opacity:.75; }
+  .hero h1 { font-size:clamp(3.2rem,6vw,5rem); }
+}
+@media(max-width:700px) {
+  .hero { display:block; min-height:0; text-align:center; padding:0 18px 68px; }
+  .hero::before,.hero::after { display:none; }
+  .library-scene { position:relative; display:block; width:calc(100% + 36px); height:310px; margin:0 -18px 34px; opacity:1; }
+  .library-arch { inset:9% 25% 7%; }
+  .library-books { width:25%; height:50%; bottom:7%; }
+  .hero-content { width:100%; margin:0 auto; }
+  .hero-content::before { margin:0 auto 20px; }
+  .hero h1 { font-size:clamp(2.7rem,10vw,4.1rem); line-height:1.08; }
+  .hero-desc { margin:0 auto 24px; }
+  .hero-patrocinio { margin:18px auto 0; }
+  .hero-content #countdown,.hero-content > div[style*="justify-content:center"] { justify-content:center!important; }
+  .prenota-steps { grid-template-columns:1fr; }
+  .prenota-step { min-height:0; text-align:center; }
+  .prenota-step-num { margin:0 auto 18px; }
+}
+@media(prefers-reduced-motion:reduce) { .library-spark { animation:none; } }
+
+/* Interactive collection: book, activity covers and personal tickets. */
+#mainContent { display:flex; flex-direction:column; }
+#mainContent > .page { order:0; }
+#mainContent > footer { order:1; }
+.sponsor-hero .chisiamo-patrocinio { background:var(--paper); border-color:var(--gold); }
+.sponsor-hero .chisiamo-patrocinio span { color:var(--text); }
+.footer-credit,.footer-credit b { color:#d8cbe0!important; }
+.hero { display:block; min-height:0; text-align:center; padding:38px 22px 90px; }
+.hero-content { width:100%; max-width:930px; margin:0 auto; }
+.hero-content::before { margin:0 auto 24px; }
+.hero h1 { font-size:clamp(2.8rem,6vw,5.4rem); line-height:1.12; margin:0 auto 22px; }
+.hero-desc { margin:0 auto 26px; }
+.hero-patrocinio { margin:18px auto 0; }
+.hero-content #countdown,.hero-content > div[style*="justify-content:center"] { justify-content:center!important; }
+.hero::before,.hero::after { display:none; }
+.library-scene { position:relative; width:min(100%,440px); height:280px; margin:0 auto 18px; overflow:visible; opacity:1; perspective:1100px; }
+.library-scene > :not(.grimoire),.library-scene::before,.library-scene::after { display:none; }
+.grimoire { pointer-events:auto; position:absolute; width:180px; height:230px; left:50%; top:14px; margin-left:-90px; transform-style:preserve-3d; transform:rotateX(calc(-12deg + var(--rx,0deg))) rotateY(calc(-25deg + var(--ry,0deg))) rotateZ(-7deg); transition:transform .35s ease; filter:drop-shadow(18px 28px 18px rgba(0,0,0,.35)); }
+.grimoire-cover { position:absolute; inset:0; transform:translateZ(20px); background:linear-gradient(135deg,#614064,#2c1c3e 65%); border:2px solid #d5ad6a; border-radius:3px 12px 12px 3px; box-shadow:inset 0 0 0 9px #39234f,inset 0 0 0 10px #b78d50; display:flex; align-items:center; justify-content:space-evenly; flex-direction:column; color:#f3dbac; text-align:center; }
+.grimoire-cover span { font:700 18px/1.3 Georgia,serif; letter-spacing:.12em; }
+.grimoire-cover b { font-size:72px; line-height:1; text-shadow:0 0 28px rgba(242,207,132,.5); }
+.grimoire-cover small { font:italic 12px Georgia,serif; }
+.grimoire-pages { position:absolute; inset:5px -12px 5px 6px; background:repeating-linear-gradient(0deg,#f2dfb9 0 2px,#c0a67c 2px 3px); transform:translateZ(5px); border-radius:4px 10px 10px 4px; box-shadow:0 0 0 5px #382344; }
+.grimoire::before { content:''; position:absolute; width:30px; height:100%; left:-15px; background:linear-gradient(90deg,#24162f,#694565,#35203f); transform:rotateY(90deg); border:1px solid #b78d50; }
+.booking-intro { max-width:1120px; margin:0 auto; padding:64px 24px 38px; display:grid; grid-template-columns:1.5fr 1fr; align-items:center; gap:64px; perspective:1200px; }
+.chapter-label { color:var(--purple); letter-spacing:.18em; font-size:.68rem; font-weight:900; }
+.booking-intro h2 { font:700 clamp(2.2rem,4vw,3.8rem)/1.1 Georgia,serif; letter-spacing:-.045em; margin:16px 0; }
+.booking-intro p { color:#6a5870; max-width:430px; }
+.booking-path { display:flex; flex-wrap:wrap; gap:18px; list-style:none; margin-top:24px; font-size:.8rem; }
+.booking-path li { display:flex; gap:7px; align-items:center; }
+.booking-path b { color:var(--purple); border:1px solid var(--gold); border-radius:50%; width:29px; height:29px; display:grid; place-items:center; font-size:.65rem; }
+.booking-ticket { padding:26px; background:linear-gradient(125deg,#38234c,#63406d); border:1px solid var(--gold); color:#f5e4c5; border-radius:18px; transform:rotateY(-15deg) rotateZ(5deg); box-shadow:10px 12px 0 #d6c4a4,20px 24px 40px rgba(33,23,53,.17); }
+.booking-ticket > span,.booking-ticket small { display:block; font-size:.63rem; letter-spacing:.16em; }
+.booking-ticket strong { display:block; font:700 2rem/1.2 Georgia,serif; margin:20px 0 10px; }
+.booking-ticket > div { font-size:54px; border-bottom:1px dashed rgba(245,228,197,.5); margin-bottom:16px; }
+#page-programma .search-wrap { max-width:1120px; padding-top:20px; }
+#page-programma .filters-section { padding-top:36px; }
+#page-programma .location-banner { max-width:1072px; margin:8px auto 30px; }
+.activity-card { border-left:7px solid var(--plum); box-shadow:5px 5px 0 #dfcfb4,10px 12px 0 rgba(189,145,80,.1),0 20px 30px rgba(33,23,53,.08); transition:transform .28s ease,box-shadow .28s ease; }
+.activity-card .card-header { position:relative; background-image:radial-gradient(circle at 50% 25%,rgba(255,255,255,.65),transparent 65%); }
+.activity-card .card-header::after { content:'✧'; display:block; position:absolute; right:15px; bottom:10px; color:rgba(57,35,79,.25); font-size:32px; }
+.activity-card .card-emoji { filter:drop-shadow(0 14px 7px rgba(33,23,53,.2)); transition:transform .3s ease; }
+.activity-card .card-body { background:linear-gradient(105deg,rgba(189,145,80,.06),transparent 24%); }
+.activity-card .card-body > div[style*="display:flex;gap:6px"] { margin-top:auto!important; padding-top:16px; }
+.activity-card .book-btn { min-height:46px; }
+.activity-card .bar-track { height:8px; box-shadow:inset 0 2px 3px rgba(33,23,53,.1); }
+.activity-card .bar-fill { transition:width .4s ease; }
+.bookings-panel { width:min(420px,calc(100vw - 32px)); border:1px solid var(--gold); box-shadow:8px 8px 0 rgba(189,145,80,.2),0 20px 60px rgba(33,23,53,.2); }
+.panel-header { background:linear-gradient(125deg,var(--plum),#63406d); font-family:Georgia,serif; font-size:1.15rem; }
+.panel-item { border:1px solid var(--line); border-radius:12px; margin:8px 0; box-shadow:3px 3px 0 rgba(189,145,80,.15); }
+.modal { box-shadow:9px 9px 0 rgba(189,145,80,.3),0 28px 80px rgba(0,0,0,.3); }
+.modal-header-body { border-left:5px solid var(--gold); margin:16px; padding:8px 14px; }
+.modal-body { padding-top:12px; }
+.sponsor-hero,.annunci-hero { padding:52px 24px; border-bottom:1px solid var(--line); }
+.annunci-hero { background:linear-gradient(135deg,var(--plum-deep),var(--plum)); }
+.annunci-hero h2 { font-family:Georgia,serif; }
+.sponsor-card,.annunci-card,.info-box { border:1px solid var(--line); box-shadow:5px 6px 0 rgba(189,145,80,.14),0 14px 28px rgba(33,23,53,.06); }
+.sponsor-card { min-height:180px; }
+.chisiamo-card { box-shadow:5px 6px 0 rgba(0,0,0,.15); }
+.annunci-tabs { gap:12px; padding-block:24px; }
+body.dark .booking-intro p { color:#cbbbd5; }
+body.dark .activity-card { box-shadow:5px 5px 0 #45334d,0 20px 30px rgba(0,0,0,.2); }
+@media(hover:hover) and (pointer:fine) {
+  body:not(.no-anim) .depth-active { transform:perspective(1000px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(-4px)!important; }
+  .depth-active .card-emoji { transform:translateY(-7px) scale(1.08); }
+}
+@media(max-width:700px) {
+  .library-scene { width:100%; height:250px; margin:0 auto 20px; }
+  .grimoire { top:12px; transform:scale(.9) rotateX(-12deg) rotateY(-25deg) rotateZ(-7deg); }
+  .booking-intro { padding:38px 20px 32px; grid-template-columns:1fr; gap:28px; }
+  .booking-ticket { max-width:300px; width:100%; margin:0 auto 12px; padding:20px; transform:rotateY(-10deg) rotateZ(3deg); }
+  .booking-ticket strong { font-size:1.6rem; margin-top:14px; }
+  .booking-ticket > div { font-size:34px; }
+  #page-programma .location-banner { margin-inline:16px; }
+  .cards-grid { gap:26px; }
+  .bookings-panel { right:-8px; }
+}
+@media(prefers-reduced-motion:reduce) { .depth-active { transform:none!important; } }
+
+/* Landing strategy: a clear action first, verified information next. */
+body:not(.dark) .hero { background:#2c1f3b; }
+.hero { padding-top:18px; }
+.library-scene { height:148px; margin-bottom:10px; background:none; }
+.grimoire { top:-40px; transform:scale(.56) rotateX(calc(-12deg + var(--rx,0deg))) rotateY(calc(-25deg + var(--ry,0deg))) rotateZ(-7deg); }
+.hero-content::before { display:none; }
+.festival-tag { margin-bottom:14px; padding:6px 15px; }
+.hero h1 { font-size:clamp(2.65rem,5vw,4.5rem); margin-bottom:20px; }
+.hero-main-action { margin:0 0 22px; }
+.primary-booking-link { display:inline-flex; justify-content:center; align-items:center; gap:24px; background:#f1d4a0; color:#2c1f3b; border:1px solid #e6c28c; border-radius:50px; padding:14px 30px; min-height:50px; font:900 1rem 'Nunito',sans-serif; cursor:pointer; box-shadow:0 7px 0 rgba(0,0,0,.12); transition:transform .2s ease,box-shadow .2s ease; }
+.primary-booking-link:hover { transform:translateY(-2px); box-shadow:0 9px 0 rgba(0,0,0,.12); }
+.primary-booking-link:active { transform:translateY(2px); box-shadow:0 3px 0 rgba(0,0,0,.12); }
+.primary-booking-link span { font-size:1.3rem; }
+.hero-main-action p { color:#eee1ef; font-size:.8rem; margin-top:12px; }
+.hero-sub { font-size:1.15rem; }
+.hero-desc { font-size:1rem; max-width:620px; }
+.festival-faq { max-width:1120px; padding:76px 24px 90px; margin:auto; display:grid; grid-template-columns:1fr 1.3fr; gap:30px 60px; }
+.faq-heading h2 { font:700 clamp(2rem,3.5vw,3.2rem)/1.12 Georgia,serif; letter-spacing:-.035em; margin:16px 0; }
+.faq-heading p { color:#6a5870; max-width:300px; }
+.faq-list details { border-bottom:1px solid #cab79b; padding:0; }
+.faq-list details:first-child { border-top:1px solid #cab79b; }
+.faq-list summary { cursor:pointer; position:relative; padding:21px 32px 21px 0; font-weight:800; list-style:none; }
+.faq-list summary::-webkit-details-marker { display:none; }
+.faq-list summary::after { content:'+'; position:absolute; right:3px; top:16px; color:var(--purple); font-size:1.5rem; font-weight:400; }
+.faq-list details[open] summary::after { content:'−'; }
+.faq-list p { margin:0 0 24px; color:#5d4e64; line-height:1.8; }
+.faq-action { grid-column:2; }
+body.dark .faq-heading p,body.dark .faq-list p { color:#d5c7df; }
+@media(max-width:700px) {
+  .library-scene { height:120px; margin-bottom:0; }
+  .grimoire { top:-50px; transform:scale(.47) rotateX(-12deg) rotateY(-25deg) rotateZ(-7deg); }
+  .hero { padding-top:14px; }
+  .hero h1 { font-size:clamp(2.2rem,8.8vw,3.3rem); line-height:1.12; margin-bottom:18px; }
+  .festival-tag { margin-bottom:12px; font-size:.64rem; }
+  .hero-main-action { margin-bottom:24px; }
+  .hero-desc { font-size:1rem; }
+  .festival-faq { display:block; padding:50px 20px 70px; }
+  .faq-heading { margin-bottom:24px; }
+  .faq-action { margin-top:30px; }
+}
+
+/* Movimento visibile ma leggero: il libro e il pass si muovono anche senza hover. */
+@keyframes festivalBookFloat {
+  0%,100% { transform:translateY(0) scale(var(--book-scale,.66)) rotateX(calc(-12deg + var(--rx,0deg))) rotateY(calc(-25deg + var(--ry,0deg))) rotateZ(-7deg); }
+  50% { transform:translateY(-11px) scale(var(--book-scale,.66)) rotateX(calc(-9deg + var(--rx,0deg))) rotateY(calc(-19deg + var(--ry,0deg))) rotateZ(-5deg); }
+}
+@keyframes festivalStarLight {
+  0%,100% { opacity:.72; transform:scale(.92) rotate(0deg); text-shadow:0 0 10px rgba(242,207,132,.28); }
+  50% { opacity:1; transform:scale(1.1) rotate(13deg); text-shadow:0 0 26px rgba(242,207,132,.85); }
+}
+@keyframes festivalTicketFloat {
+  0%,100% { transform:translateY(0) rotateY(-15deg) rotateZ(5deg); }
+  50% { transform:translateY(-9px) rotateY(-9deg) rotateZ(3deg); }
+}
+@keyframes festivalArrowNudge {
+  0%,100% { transform:translate(0,0); }
+  50% { transform:translate(4px,-3px); }
+}
+.library-scene { height:175px; }
+.grimoire { --book-scale:.66; top:-33px; animation:festivalBookFloat 5s ease-in-out infinite; }
+.grimoire-cover b { display:block; animation:festivalStarLight 3.8s ease-in-out infinite; }
+.booking-ticket { animation:festivalTicketFloat 4.6s ease-in-out infinite; }
+.booking-ticket > div { animation:festivalStarLight 4s ease-in-out infinite; }
+.primary-booking-link span { display:inline-block; animation:festivalArrowNudge 2.4s ease-in-out infinite; }
+.booking-path li { transition:transform .25s ease,color .25s ease; }
+.booking-path li:hover { transform:translateY(-3px); color:var(--purple); }
+@media (hover:hover) and (pointer:fine) {
+  .booking-ticket:hover { animation:none; transform:translateY(-12px) rotateY(0deg) rotateZ(0deg); }
+}
+@media (max-width:700px) {
+  .library-scene { height:145px; }
+  .grimoire { --book-scale:.56; top:-45px; }
+  .booking-ticket { animation-name:festivalTicketFloatMobile; }
+  @keyframes festivalTicketFloatMobile {
+    0%,100% { transform:translateY(0) rotateY(-10deg) rotateZ(3deg); }
+    50% { transform:translateY(-7px) rotateY(-5deg) rotateZ(1deg); }
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .grimoire,.grimoire-cover b,.booking-ticket,.booking-ticket > div,.primary-booking-link span { animation:none!important; }
+}
+.map-unavailable { position:relative; }
+.map-fallback { position:absolute; z-index:1000; inset:0; display:flex; flex-direction:column; justify-content:center; gap:10px; padding:24px; overflow-y:auto; background:var(--plum-deep); color:#fff7ea; text-align:left; }
+.map-fallback strong { font:700 1.3rem Georgia,serif; }
+.map-fallback p { font-size:.85rem; line-height:1.5; color:#e0d3e3; }
+.map-fallback-links { display:flex; flex-wrap:wrap; gap:9px; }
+.map-fallback a { color:#f5dcae!important; border:1px solid rgba(245,220,174,.55); border-radius:9px; padding:8px 11px; font-size:.78rem; font-weight:800; text-decoration:none; }
+.map-fallback a:hover { background:rgba(245,220,174,.12); }
 </style>
 <body>
+<script data-festival-depth>
+// Presentation-only pointer feedback; no application state or network access.
+(() => {
+  const fine = matchMedia('(hover:hover) and (pointer:fine)');
+  const reduced = matchMedia('(prefers-reduced-motion:reduce)');
+  const selector = '.activity-card,.sponsor-card,.annunci-card,.grimoire';
+  let active = null, frame = 0, point = null;
+  const reset = () => {
+    if (active) {
+      active.classList.remove('depth-active');
+      active.style.removeProperty('--rx'); active.style.removeProperty('--ry');
+    }
+    active = null;
+    cancelAnimationFrame(frame); frame = 0;
+  };
+  document.addEventListener('pointermove', event => {
+    if (!fine.matches || reduced.matches || document.body.classList.contains('no-anim')) { reset(); return; }
+    const next = event.target.closest(selector);
+    if (next !== active) { reset(); active = next; }
+    if (!active) return;
+    point = { x:event.clientX, y:event.clientY };
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      if (!active || !active.isConnected) { reset(); return; }
+      const rect = active.getBoundingClientRect();
+      active.style.setProperty('--rx', ((.5-(point.y-rect.top)/rect.height)*5).toFixed(2)+'deg');
+      active.style.setProperty('--ry', (((point.x-rect.left)/rect.width-.5)*7).toFixed(2)+'deg');
+      if (!active.matches('.grimoire')) active.classList.add('depth-active');
+    });
+  }, {passive:true});
+  document.addEventListener('pointerout', event => { if (active && !active.contains(event.relatedTarget)) reset(); });
+  window.addEventListener('blur', reset);
+  reduced.addEventListener('change', reset);
+  fine.addEventListener('change', reset);
+
+  // Se le tessere esterne della mappa vengono rifiutate, mostra le sedi già note.
+  // La richiesta e la configurazione Leaflet esistenti restano invariate.
+  let failedMapTiles = 0;
+  const showMapFallback = () => {
+    const map = document.getElementById('festivalMap');
+    if (!map || map.classList.contains('map-unavailable')) return;
+    map.classList.add('map-unavailable');
+    const fallback = document.createElement('div');
+    fallback.className = 'map-fallback';
+    fallback.innerHTML = '<strong>Le location del Festival</strong>' +
+      '<p>La mappa interattiva non è disponibile in questo momento. Puoi aprire direttamente le indicazioni per ogni sede.</p>' +
+      '<div class="map-fallback-links">' +
+      '<a href="https://www.google.com/maps/search/?api=1&amp;query=Scuola+Di+Duccio+Viale+Parigi+9+Miramare+Rimini" target="_blank" rel="noopener">Scuola Di Duccio ↗</a>' +
+      '<a href="https://maps.app.goo.gl/qjYCN3HQ4qh54toJ6" target="_blank" rel="noopener">Parco Spina Verde ↗</a>' +
+      '<a href="https://maps.app.goo.gl/d3KjGjXiFDNzgbmS7" target="_blank" rel="noopener">Spiaggia di Rimini Terme ↗</a>' +
+      '</div>';
+    map.appendChild(fallback);
+    const loading = document.getElementById('festivalMapLoading');
+    if (loading) loading.style.display = 'none';
+  };
+  document.addEventListener('error', event => {
+    if (event.target.matches?.('script[data-lazy-resource="leaflet-js"]')) {
+      showMapFallback();
+      return;
+    }
+    if (!event.target.matches?.('#festivalMap .leaflet-tile')) return;
+    if (++failedMapTiles >= 4) showMapFallback();
+  }, true);
+})();
+</script>
 
 <!-- ===== BANNER ASSISTENZA (EMAIL) ===== -->
 <div class="help-banner" id="helpBanner">
@@ -2393,9 +2986,18 @@ body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-be
 <!-- ===PAGE 1: HOME=== -->
 <div class="page active" id="page-home">
 <div class="hero">
+  <div class="library-scene" aria-hidden="true">
+    <div class="grimoire"><div class="grimoire-pages"></div><div class="grimoire-cover"><span>FESTIVAL<br>CREATTIVITÀ</span><b>✦</b><small>Il libro delle possibilità</small></div></div>
+    <div class="library-arch"><div class="library-door"><span class="library-moon"></span><span class="library-stairs"></span></div></div>
+    <div class="library-books library-books-left"></div>
+    <div class="library-books library-books-right"></div>
+    <div class="library-orbit"></div>
+    <div class="library-spark library-spark-one">✦</div><div class="library-spark library-spark-two">✧</div>
+  </div>
   <div class="hero-content">
     <div class="festival-tag">✨ Gruppo Creattività</div>
     <h1>Festival della<br>Didattica Creativa</h1>
+    <div class="hero-main-action"><button class="primary-booking-link" onclick="switchPage('programma')">Prenota ora <span aria-hidden="true">↗</span></button><p>Laboratori gratuiti · Miramare di Rimini</p></div>
     <p class="hero-sub">Prenota la tua attività preferita!</p>
     <p class="hero-desc">Tre giorni di esperienze straordinarie per ragazzi organizzate a Miramare: sport, arte, natura, cucina, teatro e tanto altro. Scegli le attività che ti incuriosiscono di più e prenota il tuo posto!</p>
     <div class="hero-dates"><span>📅</span> 2 — 4 Settembre 2026</div>
@@ -2520,10 +3122,25 @@ body:not(.no-anim) .admin-section.active { animation:premiumReveal .42s cubic-be
 </section>
 
 
+<section class="festival-faq" aria-labelledby="festivalFaqTitle">
+  <div class="faq-heading"><span class="chapter-label">PRIMA DI PRENOTARE</span><h2 id="festivalFaqTitle">Le risposte,<br>senza misteri.</h2><p>Le informazioni essenziali per organizzare la tua visita.</p></div>
+  <div class="faq-list">
+    <details><summary>Quanto costano i laboratori?</summary><p>I laboratori del Festival della Didattica Creativa sono gratuiti. Nel programma trovi le attività e i posti disponibili.</p></details>
+    <details><summary>Dove si svolgono le attività?</summary><p>Il 2 e il 3 settembre alla Scuola Di Duccio, in Viale Parigi 9 a Miramare. Il 4 settembre al Parco Spina Verde e alla Casina CiViVo. Controlla sempre il luogo indicato nella scheda del laboratorio.</p></details>
+    <details><summary>Come posso riservare un posto?</summary><p>Apri il programma, scegli il laboratorio e accedi al tuo account per prenotare. Alcune attività richiedono una prenotazione telefonica: il numero e le istruzioni sono indicati nella relativa scheda.</p></details>
+    <details><summary>Cosa devo mostrare all'ingresso?</summary><p>Per le prenotazioni online, conserva il tuo QR code personale e mostralo all'ingresso. Puoi consultare le tue prenotazioni dal programma.</p></details>
+  </div>
+  <div class="faq-action"><button class="primary-booking-link" onclick="switchPage('programma')">Prenota ora <span aria-hidden="true">↗</span></button></div>
+</section>
 </div><!-- /page-home -->
 
 <!-- ===PAGE 2: PROGRAMMA=== -->
 <div class="page" id="page-programma">
+
+<section class="booking-intro" aria-labelledby="bookingIntroTitle">
+  <div><span class="chapter-label">IL TUO PROSSIMO CAPITOLO</span><h2 id="bookingIntroTitle">Scegli un'esperienza.<br>Falla diventare tua.</h2><p>Esplora i laboratori, trova il tuo giorno e prenota il tuo posto.</p><ol class="booking-path"><li><b>01</b> Esplora</li><li><b>02</b> Scegli</li><li><b>03</b> Prenota</li></ol></div>
+  <div class="booking-ticket" aria-hidden="true"><span>PASS DEL FESTIVAL</span><strong>La tua prossima<br>scoperta</strong><div>✦</div><small>2 — 4 SETTEMBRE · MIRAMARE</small></div>
+</section>
 
 <!-- SEARCH BAR -->
 <div class="search-wrap">
