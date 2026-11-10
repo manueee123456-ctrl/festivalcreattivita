@@ -1689,6 +1689,75 @@ body.dark .tab-btn.active { color:#f2d9a4; }
   .tab-btn .tab-label { font-size:clamp(.52rem,2vw,.62rem); }
 }
 @media(prefers-reduced-motion:reduce) { .hero::before,.hero::after { animation:none!important; } }
+
+/* Cinematic chapter layout inspired by the supplied references. */
+.hero { min-height:760px; display:flex; align-items:center; text-align:left; padding:100px max(5vw,30px) 112px; overflow:hidden; }
+.hero::before { content:'01 / 04'; font-family:'Nunito',sans-serif; font-size:.7rem; font-weight:900; letter-spacing:.22em; color:#d8bc88; top:46px; left:max(5vw,30px); }
+.hero::after { content:'SCOPRI · CREA · GIOCA'; font-family:'Nunito',sans-serif; font-size:.66rem; font-weight:900; letter-spacing:.28em; color:#d8bc88; bottom:42px; right:max(5vw,30px); }
+.hero-content { width:min(55%,760px); max-width:none; margin:0; position:relative; z-index:2; }
+.hero-content::before { margin:0 0 28px; }
+.hero h1 { margin:0 0 26px; font-size:clamp(3.8rem,6.2vw,7rem); line-height:1.03; letter-spacing:-.065em; text-wrap:balance; }
+.hero-sub { margin:0 0 16px; }
+.hero-desc { margin:0 0 26px; max-width:620px; }
+.hero-dates { margin:0 0 16px; }
+.hero-patrocinio { margin:18px 0 0; max-width:600px; }
+.hero-content #countdown,.hero-content > div[style*="justify-content:center"] { justify-content:flex-start!important; }
+.hero-content > div[style*="justify-content:center"] { gap:12px!important; }
+.library-scene { position:absolute; z-index:1; inset:0 0 0 auto; width:50%; overflow:hidden; pointer-events:none; background:radial-gradient(ellipse at 54% 45%,rgba(218,176,99,.19),transparent 55%); }
+.library-scene::before { content:''; position:absolute; inset:8% 5% 12%; border:1px solid rgba(233,196,132,.3); border-radius:48% 48% 10px 10px / 28% 28% 10px 10px; box-shadow:inset 0 0 0 14px rgba(33,23,53,.24),inset 0 0 0 15px rgba(233,196,132,.22),0 0 60px rgba(189,145,80,.1); }
+.library-scene::after { content:''; position:absolute; left:0; right:0; bottom:0; height:22%; background:linear-gradient(180deg,transparent,#1b132a 72%); }
+.library-arch { position:absolute; inset:11% 16% 13%; border:18px solid #392943; border-bottom-width:24px; border-radius:48% 48% 5px 5px / 28% 28% 5px 5px; box-shadow:0 0 0 2px #a47c4c,0 0 0 22px rgba(68,44,67,.7),0 0 0 24px rgba(220,181,109,.55),inset 0 0 65px #120d20; overflow:hidden; background:radial-gradient(circle at 50% 38%,#896d7a 0%,#503850 35%,#21182e 74%); }
+.library-door { position:absolute; inset:8% 20% -4%; border:4px solid rgba(215,171,100,.63); border-bottom:0; border-radius:47% 47% 0 0 / 27% 27% 0 0; box-shadow:0 0 0 13px rgba(32,20,40,.75),0 0 0 15px rgba(215,171,100,.34),inset 0 0 50px rgba(246,203,113,.14); background:radial-gradient(ellipse at 52% 41%,rgba(245,206,139,.34),transparent 33%),linear-gradient(160deg,#251c37,#100d1c); }
+.library-door::before { content:'✧'; position:absolute; top:15%; left:50%; transform:translateX(-50%); font-family:Georgia,serif; color:#f4d9a2; font-size:clamp(3rem,6vw,6rem); text-shadow:0 0 25px #d7a963; }
+.library-moon { position:absolute; left:50%; top:37%; transform:translateX(-50%); width:38%; aspect-ratio:1; border-radius:50%; background:radial-gradient(circle at 35% 32%,#fff2cf,#d8ac72 65%,#936a51); box-shadow:0 0 40px rgba(245,206,139,.65),0 0 110px rgba(245,206,139,.23); }
+.library-moon::after { content:''; position:absolute; inset:0; border-radius:50%; background:linear-gradient(110deg,transparent 45%,rgba(36,22,42,.42)); }
+.library-stairs { position:absolute; bottom:0; left:-12%; width:124%; height:31%; background:repeating-linear-gradient(180deg,transparent 0 20px,rgba(205,164,103,.7) 21px 23px,rgba(24,17,33,.95) 24px 38px); clip-path:polygon(42% 0,58% 0,100% 100%,0 100%); }
+.library-books { position:absolute; z-index:2; width:27%; height:54%; bottom:12%; background:repeating-linear-gradient(90deg,#2d2134 0 10px,#a98055 11px 13px,#4c3548 14px 26px,#c29c65 27px 29px,#271b33 30px 39px); border:7px solid #201527; box-shadow:inset 0 0 60px rgba(0,0,0,.7),0 18px 34px rgba(0,0,0,.5); opacity:.9; }
+.library-books::after { content:''; position:absolute; inset:25% 0 auto; border-top:11px solid #201527; box-shadow:0 10px 0 #ae8050,0 125px 0 #201527,0 135px 0 #ae8050; }
+.library-books-left { left:0; transform:perspective(500px) rotateY(11deg); }
+.library-books-right { right:0; transform:perspective(500px) rotateY(-11deg); }
+.library-orbit { position:absolute; z-index:3; top:15%; right:13%; width:64%; aspect-ratio:1; border:1px solid rgba(239,204,144,.38); border-radius:50%; transform:rotate(-25deg) scaleY(.38); box-shadow:0 0 25px rgba(255,224,167,.1); }
+.library-spark { position:absolute; z-index:4; color:#f4d9a2; text-shadow:0 0 20px #e3b777; animation:libraryFloat 5s ease-in-out infinite alternate; }
+.library-spark-one { top:20%; left:20%; font-size:2rem; }
+.library-spark-two { top:53%; right:18%; font-size:3rem; animation-delay:1.3s; }
+@keyframes libraryFloat { from{transform:translateY(0);opacity:.6} to{transform:translateY(-14px);opacity:1} }
+.filters-section,.activities-section,.sponsor-page { position:relative; }
+.filters-section::before { content:'IL CATALOGO'; display:block; margin-bottom:10px; color:var(--purple); font-size:.69rem; font-weight:900; letter-spacing:.24em; }
+.cards-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr)); gap:26px; }
+.activity-card { min-height:360px; }
+.card-header { height:158px; }
+.card-emoji { font-size:4rem; }
+.day-group { padding-top:12px; }
+.day-label { border-bottom:1px solid rgba(189,145,80,.4); padding-bottom:18px; }
+.day-divider { display:none; }
+.prenota-steps { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.prenota-step { text-align:left; min-height:210px; }
+.prenota-step-num { margin:0 0 18px; }
+.chisiamo-section { position:relative; overflow:hidden; }
+.chisiamo-section::before { content:'✦'; position:absolute; right:-3%; top:-20%; font-size:28rem; line-height:1; color:rgba(234,214,174,.055); pointer-events:none; }
+@media(max-width:1000px) {
+  .hero { min-height:690px; }
+  .hero-content { width:62%; }
+  .library-scene { width:48%; opacity:.75; }
+  .hero h1 { font-size:clamp(3.2rem,6vw,5rem); }
+}
+@media(max-width:700px) {
+  .hero { display:block; min-height:0; text-align:center; padding:0 18px 68px; }
+  .hero::before,.hero::after { display:none; }
+  .library-scene { position:relative; display:block; width:calc(100% + 36px); height:310px; margin:0 -18px 34px; opacity:1; }
+  .library-arch { inset:9% 25% 7%; }
+  .library-books { width:25%; height:50%; bottom:7%; }
+  .hero-content { width:100%; margin:0 auto; }
+  .hero-content::before { margin:0 auto 20px; }
+  .hero h1 { font-size:clamp(2.7rem,10vw,4.1rem); line-height:1.08; }
+  .hero-desc { margin:0 auto 24px; }
+  .hero-patrocinio { margin:18px auto 0; }
+  .hero-content #countdown,.hero-content > div[style*="justify-content:center"] { justify-content:center!important; }
+  .prenota-steps { grid-template-columns:1fr; }
+  .prenota-step { min-height:0; text-align:center; }
+  .prenota-step-num { margin:0 auto 18px; }
+}
+@media(prefers-reduced-motion:reduce) { .library-spark { animation:none; } }
 </style>
 <body>
 
@@ -2685,6 +2754,13 @@ body.dark .tab-btn.active { color:#f2d9a4; }
 <!-- ===PAGE 1: HOME=== -->
 <div class="page active" id="page-home">
 <div class="hero">
+  <div class="library-scene" aria-hidden="true">
+    <div class="library-arch"><div class="library-door"><span class="library-moon"></span><span class="library-stairs"></span></div></div>
+    <div class="library-books library-books-left"></div>
+    <div class="library-books library-books-right"></div>
+    <div class="library-orbit"></div>
+    <div class="library-spark library-spark-one">✦</div><div class="library-spark library-spark-two">✧</div>
+  </div>
   <div class="hero-content">
     <div class="festival-tag">✨ Gruppo Creattività</div>
     <h1>Festival della<br>Didattica Creativa</h1>
